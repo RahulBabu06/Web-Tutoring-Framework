@@ -165,9 +165,9 @@ export function createAdminStudentsRouter({
             mode: "new",
             errors: [],
             student: {
-                name: "",
+                name: typeof req.query.name === "string" ? req.query.name.slice(0, 100) : "",
                 parentName: "",
-                parentEmail: "",
+                parentEmail: typeof req.query.parentEmail === "string" ? req.query.parentEmail.slice(0, 254) : "",
                 phone: "",
                 preferredClass: "",
                 credits: 0,

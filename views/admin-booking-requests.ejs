@@ -13,19 +13,46 @@
         <section class="admin-page-heading">
             <p class="eyebrow">Website</p>
             <h1>Booking Requests</h1>
-            <p>Requests sent from the booking form, newest first. Reply to the email address given, then add the student under Students.</p>
+            <p>Requests sent from the booking form, newest first. Reply to the email address given, mark the request as contacted, then use "Add as student" once they book.</p>
         </section>
 
         <% if (!isEmailConfigured) { %>
             <div class="admin-alert"><p>Email isn't set up, so you won't be emailed about new requests. Check this page, or set up the Gmail API (see docs/SETUP.md).</p></div>
         <% } %>
 
+        <% if (updated) { %>
+            <div class="admin-success" role="status">Booking request updated.</div>
+        <% } %>
+        <p>
+            <%= counts.new %> new, <%= counts.contacted %> contacted, <%= counts.booked %> booked, <%= counts.closed %> closed.
+        </p>
+        <form class="student-search" method="get" action="/admin/booking-requests" role="search">
+            <div class="student-search-field">
+                <label for="q">Search</label>
+                <input type="search" id="q" name="q" value="<%= filters.q %>" maxlength="100" placeholder="Name, email or goals">
+            </div>
+            <div class="student-search-field">
+                <label for="status">Status</label>
+                <select id="status" name="status">
+                    <% statusFilters.forEach((option) => { %>
+                        <option value="<%= option %>" <%= filters.status === option ? "selected" : "" %>><%= option === "open" ? "Open (new and contacted)" : option[0].toUpperCase() + option.slice(1) %></option>
+                    <% }) %>
+                </select>
+            </div>
+            <button type="submit">Filter</button>
+        </form>
         <% if (requests.length === 0) { %>
             <section class="empty-state">
-                <h2>No booking requests yet</h2>
-                <p>Requests from the <a href="/book-now">booking form</a> will appear here.</p>
+                <% if (counts.new + counts.contacted + counts.booked + counts.closed === 0) { %>
+                    <h2>No booking requests yet</h2>
+                    <p>Requests from the <a href="/book-now">booking form</a> will appear here.</p>
+                <% } else { %>
+                    <h2>No matching requests</h2>
+                    <p><a href="/admin/booking-requests?status=all">Show all requests</a></p>
+                <% } %>
             </section>
         <% } else { %>
+            <p><%= matchingCount %> matching request<%= matchingCount === 1 ? "" : "s" %><%= pageCount > 1 ? `, page ${filters.page} of ${pageCount}` : "" %>.</p>
             <div class="refund-request-list">
                 <% requests.forEach((request) => { %>
                     <article class="parent-request-card">
@@ -33,12 +60,31 @@
                             <strong><%= request.studentName %>, <%= request.level %></strong>
                             <span><a href="mailto:<%= request.email %>"><%= request.email %></a>, <%= request.receivedLabel %></span>
                         </div>
-                        <span class="status-pill status-active"><%= request.preferredClass %></span>
-                        <p class="parent-request-note">Time: <%= request.timeSlot %><%= request.lessonLength ? `. Lesson: ${request.lessonLength}` : "" %></p>
+                        <span class="status-pill <%= ["new", "contacted"].includes(request.status) ? "status-pending" : "status-inactive" %>"><%= request.status %></span>
+                        <p class="parent-request-note">Class: <%= request.preferredClass %>. Time: <%= request.timeSlot %><%= request.lessonLength ? `. Lesson: ${request.lessonLength}` : "" %></p>
                         <p class="parent-request-note">Goals: <%= request.goals %></p>
+                        <form class="form-actions" method="POST" action="/admin/booking-requests/<%= encodeURIComponent(request.id) %>/status">
+                            <input type="hidden" name="q" value="<%= filters.q %>">
+                            <input type="hidden" name="status" value="<%= filters.status %>">
+                            <input type="hidden" name="page" value="<%= filters.page %>">
+                            <label for="newStatus-<%= request.id %>">Status</label>
+                            <select id="newStatus-<%= request.id %>" name="newStatus">
+                                <% bookingStatuses.forEach((status) => { %>
+                                    <option value="<%= status %>" <%= request.status === status ? "selected" : "" %>><%= status[0].toUpperCase() + status.slice(1) %></option>
+                                <% }) %>
+                            </select>
+                            <button type="submit">Update</button>
+                            <a href="<%= request.newStudentHref %>">Add as student</a>
+                        </form>
                     </article>
                 <% }) %>
             </div>
+            <% if (previousHref || nextHref) { %>
+                <nav class="form-actions" aria-label="Booking request pages">
+                    <% if (previousHref) { %><a href="<%= previousHref %>">Previous page</a><% } %>
+                    <% if (nextHref) { %><a href="<%= nextHref %>">Next page</a><% } %>
+                </nav>
+            <% } %>
         <% } %>
     </main>
 </body>
