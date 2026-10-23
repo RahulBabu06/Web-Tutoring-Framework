@@ -37,6 +37,17 @@ export function createSessionHelpers({
         res.clearCookie(parentRefreshCookieName, parentCookieOptions(req, 0));
     }
 
+    // Network errors, timeouts and 5xx/429 from Auth are temporary: keep the cookies so the parent stays signed in.
+    function isTransientAuthError(error) {
+        return error instanceof TypeError || ["AbortError", "TimeoutError"].includes(error.name) || error.status >= 500 || error.status === 429;
+    }
+
+    function authUnavailableError(cause) {
+        const error = new Error("The account service is temporarily unavailable.", { cause });
+        error.status = 503;
+        return error;
+    }
+
     async function getParentSession(req, res) {
         const cookies = parseCookies(req);
         const accessToken = cookies[parentAccessCookieName];
@@ -51,6 +62,10 @@ export function createSessionHelpers({
                 const user = await supabaseAuthRequest("/user", { accessToken });
                 return { user, accessToken, refreshToken };
             } catch (error) {
+                if (isTransientAuthError(error)) {
+                    throw authUnavailableError(error);
+                }
+
                 if (!refreshToken) {
                     clearParentSessionCookies(req, res);
                     return null;
@@ -75,6 +90,10 @@ export function createSessionHelpers({
                 refreshToken: refreshedSession.refresh_token
             };
         } catch (error) {
+            if (isTransientAuthError(error)) {
+                throw authUnavailableError(error);
+            }
+
             clearParentSessionCookies(req, res);
             return null;
         }

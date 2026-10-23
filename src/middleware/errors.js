@@ -9,6 +9,12 @@ export function errorHandler(error, req, res, next) {
         return next(error);
     }
 
+    if (error.status === 503) {
+        return res.status(503).render("error", { pageTitle: "Temporarily unavailable", pageDescription: "", currentPath: req.path, status: 503, message: `${error.message} You're still signed in, so please try again in a minute.` }, (renderError, html) => {
+            res.send(renderError ? error.message : html);
+        });
+    }
+
     const message = req.path.startsWith("/admin")
         ? "There was a problem loading the admin records. Check the server logs and database settings."
         : "";
