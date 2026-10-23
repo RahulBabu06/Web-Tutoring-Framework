@@ -1,4 +1,5 @@
 import express from "express";
+import { sendNotFound } from "../middleware/errors.js";
 import { StudentStatus, classOptions } from "../config/classes.js";
 import { inputLimits } from "../config/env.js";
 
@@ -202,13 +203,13 @@ export function createAdminStudentsRouter({
 
     router.get("/admin/students/:id/edit", requireAdmin, asyncHandler(async (req, res) => {
         if (!isUuid(req.params.id)) {
-            return res.status(404).send("Student not found.");
+            return sendNotFound(res, "Student not found.");
         }
 
         const student = await getStudent(req.params.id);
 
         if (!student) {
-            return res.status(404).send("Student not found.");
+            return sendNotFound(res, "Student not found.");
         }
 
         res.render("admin-student-form", {
@@ -220,13 +221,13 @@ export function createAdminStudentsRouter({
 
     router.post("/admin/attendance/:id/refund", requireAdmin, asyncHandler(async (req, res) => {
         if (!isSupabaseConfigured || !isUuid(req.params.id)) {
-            return res.status(404).send("Attendance record not found.");
+            return sendNotFound(res, "Attendance record not found.");
         }
 
         const record = await getAttendanceRecord(req.params.id);
 
         if (!record) {
-            return res.status(404).send("Attendance record not found.");
+            return sendNotFound(res, "Attendance record not found.");
         }
 
         try {
@@ -244,7 +245,7 @@ export function createAdminStudentsRouter({
 
     router.get("/admin/students/:id/attendance", requireAdmin, asyncHandler(async (req, res) => {
         if (!isUuid(req.params.id)) {
-            return res.status(404).send("Student not found.");
+            return sendNotFound(res, "Student not found.");
         }
 
         let student = null;
@@ -264,7 +265,7 @@ export function createAdminStudentsRouter({
         });
 
         if (studentNotFound) {
-            return res.status(404).send("Student not found.");
+            return sendNotFound(res, "Student not found.");
         }
 
         res.render("admin-student-attendance", {
@@ -287,13 +288,14 @@ export function createAdminStudentsRouter({
             isSupabaseConfigured,
             saved: Boolean(options.saved),
             today: formatPaymentDateInput(options.paidAt),
+            values: options.values || {},
             errors: options.errors || []
         });
     }
 
     router.get("/admin/students/:id/payments", requireAdmin, asyncHandler(async (req, res) => {
         if (!isUuid(req.params.id)) {
-            return res.status(404).send("Student not found.");
+            return sendNotFound(res, "Student not found.");
         }
 
         let student = null;
@@ -311,7 +313,7 @@ export function createAdminStudentsRouter({
         });
 
         if (studentNotFound) {
-            return res.status(404).send("Student not found.");
+            return sendNotFound(res, "Student not found.");
         }
 
         renderStudentPayments(res, student, {
@@ -343,7 +345,7 @@ export function createAdminStudentsRouter({
 
     router.post("/admin/students/:id/payments", requireAdmin, asyncHandler(async (req, res) => {
         if (!isUuid(req.params.id)) {
-            return res.status(404).send("Student not found.");
+            return sendNotFound(res, "Student not found.");
         }
 
         if (!isSupabaseConfigured) {
@@ -353,7 +355,7 @@ export function createAdminStudentsRouter({
         const student = await getStudent(req.params.id);
 
         if (!student) {
-            return res.status(404).send("Student not found.");
+            return sendNotFound(res, "Student not found.");
         }
 
         const paymentInput = normalizePaymentInput(req.body);
@@ -376,6 +378,7 @@ export function createAdminStudentsRouter({
                 status: 400,
                 payments: await listStudentPayments(req.params.id),
                 paidAt: req.body.paidAt,
+                values: req.body,
                 errors
             });
         }
@@ -402,7 +405,7 @@ export function createAdminStudentsRouter({
 
     router.post("/admin/students/:id", requireAdmin, asyncHandler(async (req, res) => {
         if (!isUuid(req.params.id)) {
-            return res.status(404).send("Student not found.");
+            return sendNotFound(res, "Student not found.");
         }
 
         const studentInput = normalizeStudentInput(req.body);
@@ -418,7 +421,7 @@ export function createAdminStudentsRouter({
 
         const student = await getStudent(req.params.id);
         if (!student) {
-            return res.status(404).send("Student not found.");
+            return sendNotFound(res, "Student not found.");
         }
 
         const originalCredits = req.body.originalCredits === undefined ? student.credits : toInteger(req.body.originalCredits);
@@ -439,7 +442,7 @@ export function createAdminStudentsRouter({
             const current = await getStudent(req.params.id);
 
             if (!current) {
-                return res.status(404).send("Student not found.");
+                return sendNotFound(res, "Student not found.");
             }
 
             return res.status(409).render("admin-student-form", {
