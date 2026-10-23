@@ -135,7 +135,9 @@ Any Node.js 20+ host works (Render, Railway, Fly.io, a VPS):
 3. Add every value from your `.env` as an environment variable on the host, and set `SITE_URL` to your public address (e.g. `https://www.your-site.com`).
 4. Update the Supabase Site URL and Redirect URLs (step 2.5) and the Stripe webhook (step 4.3) to use that address.
 
-**Saved files:** booking requests (`booking-requests.jsonl`) and admin backups are written to `DATA_DIR` (default `./data`). Many hosts wipe local files on each deploy, so either attach a persistent disk and point `DATA_DIR` at it, or set up Gmail so booking requests reach your inbox.
+**Saved files:** booking requests (`booking-requests.jsonl` and their statuses in `booking-request-status.json`), signed-out admin sessions and admin backups are written to `DATA_DIR` (default `./data`). Many hosts wipe local files on each deploy, so either attach a persistent disk and point `DATA_DIR` at it, or set up Gmail so booking requests reach your inbox.
+
+**What the admin backup covers:** the Backup page saves students, attendance and payments only. Parent accounts, parent-child links, refund requests, class cancellations and email logs stay in Supabase, so turn on Supabase's database backups (or run `pg_dump`) as well. Booking requests live in `DATA_DIR` and your settings in `business.config.json`, so copy those too.
 
 ## Troubleshooting
 

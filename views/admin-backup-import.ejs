@@ -13,6 +13,7 @@
         <section class="admin-page-heading">
             <h1>Backup</h1>
             <p>Keep a copy of student, attendance and payment records, or load records back in from a backup.</p>
+            <p class="admin-alert">A backup is not a full copy of the site. It does not include parent accounts, parent-child links, refund requests, class cancellations, email logs, booking requests or <code>business.config.json</code>. Use Supabase's own database backups for those, and keep a copy of the <code>DATA_DIR</code> folder.</p>
         </section>
 
         <% if (savedBackup) { %>
