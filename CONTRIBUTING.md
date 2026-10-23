@@ -8,7 +8,7 @@ Thanks for helping improve Web Tutoring Framework.
 2. Copy `.env.example` to `.env`. You don't need any accounts to run the public site; set `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` to try the admin pages.
 3. `npm start`, then open http://localhost:4000.
 
-For database work, create a free Supabase project and run `supabase/schema.sql` (see [supabase/README.md](supabase/README.md)). Use Stripe test keys only.
+For database work, create a free Supabase project and run `supabase/schema.sql` (see [docs/SETUP.md](docs/SETUP.md)). Use Stripe test keys only.
 
 ## Making changes
 

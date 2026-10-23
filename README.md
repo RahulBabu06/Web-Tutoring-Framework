@@ -25,7 +25,30 @@ cp .env.example .env
 npm start
 ```
 
-Open http://localhost:4000. To try the admin pages, set `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` (32+ random characters) in `.env`, restart, and go to http://localhost:4000/admin.
+Open http://localhost:4000. You now have the public site, and booking requests are saved on the server.
+
+To log in to the admin area, add these two lines to `.env`, restart (`Ctrl+C`, then `npm start`) and go to http://localhost:4000/admin:
+
+```sh
+ADMIN_PASSWORD=choose-a-password
+ADMIN_SESSION_SECRET=paste-the-output-of-the-command-below
+```
+
+```sh
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+```
+
+### What works without any accounts
+
+| You've set up | What works |
+| --- | --- |
+| Nothing | Public pages, booking form. Requests are saved to `data/booking-requests.jsonl` |
+| + admin password | Admin login and the **Bookings** page listing those requests |
+| + [Supabase](docs/SETUP.md#2-supabase-database-and-parent-accounts) (free) | Students, registers, credits and free skips, payments, refunds, parent portal |
+| + [Gmail API](docs/SETUP.md#3-gmail-api-emails) | Booking requests emailed to you, automatic parent emails |
+| + [Stripe](docs/SETUP.md#4-stripe-online-payments) | Parents pay for lesson packs and 1-to-1 lessons online |
+
+Step-by-step instructions for each are in [docs/SETUP.md](docs/SETUP.md).
 
 ## Configure your business
 
@@ -48,18 +71,27 @@ A student's class is stored as text (`"<name>, <time>"` for a group class, or th
 
 Secrets and per-deploy settings go in `.env` (see [.env.example](.env.example)). Everything in `.env` can also be set as normal environment variables on your host.
 
+## Customise your site
+
+- **Business details, classes, prices and rules:** `business.config.json` (above). Restart after editing.
+- **Page wording:** the public pages are EJS templates in `views/site/` (`home.ejs`, `lessons.ejs`, `book-now.ejs`, `contact.ejs`, `thank-you.ejs`, `cookies.ejs`). Edit the text between the tags; leave the `<%= ... %>` parts, which fill in values from the config.
+- **Header and footer:** `views/partials/site-header.ejs` and `views/partials/site-footer.ejs`.
+- **Logo and photos:** put image files in `public/` (for example `public/logo.png`) and they're served from the site root (`/logo.png`). To use a logo instead of the text name, replace the `brand-wordmark` span in `site-header.ejs` with `<img src="/logo.png" alt="<%= business.name %>">`.
+- **Colours and fonts:** `public/styles.css`.
+- **Cookie policy:** review `views/site/cookies.ejs` so it matches how you run the site.
+
 ## Integrations
 
-Each integration is switched on by its environment variables and checked with an `isConfigured` flag. When one is missing, the app logs a warning and carries on:
+Each integration is switched on by its environment variables. When one is missing, the app logs a warning at startup and carries on, and the affected pages say what's missing:
 
 | Integration | Variables | Without it |
 | --- | --- | --- |
-| Admin login | `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET` | `/admin` shows a "not configured" login page |
-| Supabase | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY` | Admin pages show a setup message; parent sign-up/login is unavailable |
-| Stripe | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Parents don't see "Buy" buttons; payments can still be recorded manually in admin |
-| Gmail API | `GMAIL_USER`, `GMAIL_OAUTH_CLIENT_ID`, `GMAIL_OAUTH_CLIENT_SECRET`, `GMAIL_OAUTH_REFRESH_TOKEN` | Booking requests are accepted but not emailed; parent emails are skipped |
+| Admin login | `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET` | `/admin` explains which settings are missing |
+| Supabase | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY` | Admin pages show "Database service is not configured yet"; parent sign-up and login are unavailable |
+| Gmail API | `GMAIL_USER`, `GMAIL_OAUTH_CLIENT_ID`, `GMAIL_OAUTH_CLIENT_SECRET`, `GMAIL_OAUTH_REFRESH_TOKEN` | Booking requests are only saved to the admin **Bookings** page; no parent emails |
+| Stripe | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | No "Buy" buttons for parents; you can still record payments in admin |
 
-Setup steps for all three are in [supabase/README.md](supabase/README.md).
+See [docs/SETUP.md](docs/SETUP.md) for setting each one up, plus deploying.
 
 ## Project layout
 
@@ -76,7 +108,8 @@ src/
   routes/               Public pages, booking, admin and parent portal routers
 views/                  EJS templates (site/ for public pages, partials/, admin and parent pages)
 public/                 CSS, fonts and browser scripts
-supabase/               schema.sql, seed.sql and setup guide
+supabase/               schema.sql and seed.sql
+docs/SETUP.md           Step-by-step setup for admin, Supabase, Gmail, Stripe and deploying
 scripts/                Gmail OAuth helper and the syntax check
 ```
 
@@ -89,7 +122,7 @@ scripts/                Gmail OAuth helper and the syntax check
 
 ## Deploying
 
-Any Node.js host works (Render, Railway, Fly.io, a VPS). Set the environment variables from `.env.example` on the host, use `npm start` as the start command, and set `SITE_URL` to your public URL. Local backups are written to `DATA_DIR` (default `./data`); use a persistent disk if you rely on them.
+Any Node.js host works (Render, Railway, Fly.io, a VPS). See [docs/SETUP.md](docs/SETUP.md#5-deploying).
 
 ## Contributing
 
