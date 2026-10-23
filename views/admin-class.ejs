@@ -29,7 +29,7 @@
         <% } %>
 
         <% if (cancelNotice === "cancelled") { %>
-            <div class="admin-success">Class cancelled. Parents are being emailed.</div>
+            <div class="admin-success"><%= parentEmailsWillSend ? "Class cancelled. Parents are being emailed." : "Class cancelled. No emails were sent (parent emails are off or Gmail isn't set up), so let parents know yourself." %></div>
         <% } else if (cancelNotice === "restored") { %>
             <div class="admin-success">Cancellation removed. The class is back on.</div>
         <% } else if (cancelNotice === "has-register") { %>
@@ -167,8 +167,13 @@
                     <input type="hidden" name="classDate" value="<%= classDate %>">
                     <label for="cancelReason">Reason (shown to parents, optional)</label>
                     <input type="text" id="cancelReason" name="reason" maxlength="<%= inputLimits.cancelReason %>">
-                    <p>Cancelling <%= classDateLabel %> emails the parents of all <%= registerRows.length %> active students in this class.</p>
-                    <button type="submit" class="button-link">Cancel class and email parents</button>
+                    <% if (parentEmailsWillSend) { %>
+                        <p>Cancelling <%= classDateLabel %> emails the parents of all <%= registerRows.length %> active students in this class.</p>
+                        <button type="submit" class="button-link">Cancel class and email parents</button>
+                    <% } else { %>
+                        <p>Cancelling <%= classDateLabel %> won't email parents, because parent emails are off or Gmail isn't set up.</p>
+                        <button type="submit" class="button-link">Cancel class</button>
+                    <% } %>
                 </form>
             </details>
         <% } %>
