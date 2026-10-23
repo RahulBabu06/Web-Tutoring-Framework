@@ -75,6 +75,7 @@
                     <label for="classDate">Class date</label>
                     <input type="date" id="classDate" name="classDate" value="<%= classDate %>">
                     <span><%= classDateLabel %></span>
+                    <button type="button" class="button-link button-link-outline" data-mark-all-present>Mark unmarked as present</button>
                 </section>
 
                 <section class="student-table-wrap class-roster-table" aria-label="<%= className %> register">
@@ -99,8 +100,8 @@
                         </thead>
                         <tbody>
                             <% registerRows.forEach(({ student, attendance, freeSkipsLeft, freeSkipAllowance }) => { %>
-                                <% const status = attendance ? attendance.status : "present"; %>
-                                <% const creditDelta = attendance ? attendance.creditDelta : -1; %>
+                                <% const status = attendance ? attendance.status : ""; %>
+                                <% const creditDelta = attendance ? attendance.creditDelta : 0; %>
                                 <tr data-free-skips-left="<%= freeSkipsLeft %>">
                                     <td class="register-student-cell">
                                         <strong><%= student.name %></strong>
@@ -157,6 +158,7 @@
                 </section>
 
                 <div class="form-actions register-actions">
+                    <span class="register-status" data-register-status aria-live="polite"></span>
                     <input type="submit" value="Save register">
                 </div>
             </form>
