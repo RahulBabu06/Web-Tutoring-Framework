@@ -66,6 +66,11 @@ export const bookingRateLimiter = createRateLimiter(
     5,
     "Too many booking requests. Please wait an hour and try again, or contact us directly."
 );
+export const refundRequestRateLimiter = createRateLimiter(
+    60 * 60 * 1000,
+    5,
+    "Too many refund requests. Please wait an hour and try again, or contact us directly."
+);
 export const backupImportRateLimiter = createRateLimiter(
     15 * 60 * 1000,
     20,
