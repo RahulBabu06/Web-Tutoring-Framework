@@ -1,7 +1,7 @@
 import { appendFile, mkdir, readFile } from "fs/promises";
 import { join } from "path";
 import { classOptions, getGroupClassForOption, oneToOneOption, oneToOneTimeSlots } from "../config/classes.js";
-import { business, dataDir } from "../config/env.js";
+import { business, dataDir, inputLimits } from "../config/env.js";
 
 const requiredFields = ["email", "childName", "level", "goals", "preferredClass"];
 const bookingRequestsFile = join(dataDir, "booking-requests.jsonl");
@@ -12,11 +12,16 @@ export function createBookingService({ email, bookingEmailAddress, getOneToOneLe
         const hasAllDetails = requiredFields.every((field) => {
             return typeof body[field] === "string" && body[field].trim() !== "";
         });
+        const hasValidDetails = hasAllDetails
+            && body.email.trim().length <= inputLimits.bookingEmail
+            && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email.trim())
+            && body.childName.trim().length >= 2 && body.childName.trim().length <= inputLimits.childName
+            && body.goals.trim().length >= 5 && body.goals.trim().length <= inputLimits.bookingGoals;
         const isOneToOne = Boolean(oneToOneOption) && body.preferredClass === oneToOneOption;
         const hasValidTimeSlot = !isOneToOne || oneToOneTimeSlots.includes(body.preferredTimeSlot);
         const lessonLength = isOneToOne ? getOneToOneLesson(body.lessonLength) : null;
 
-        if (!hasAllDetails || !classOptions.includes(body.preferredClass) || !business.levels.includes(body.level) || !hasValidTimeSlot || (isOneToOne && !lessonLength)) {
+        if (!hasValidDetails || !classOptions.includes(body.preferredClass) || !business.levels.includes(body.level) || !hasValidTimeSlot || (isOneToOne && !lessonLength)) {
             return null;
         }
 
