@@ -79,7 +79,11 @@ export function createSessionHelpers({
     function parseCookies(req) {
         return Object.fromEntries((req.headers.cookie || "").split(";").filter(Boolean).map((cookie) => {
             const [key, ...value] = cookie.trim().split("=");
-            return [key, decodeURIComponent(value.join("="))];
+            try {
+                return [key, decodeURIComponent(value.join("="))];
+            } catch {
+                return [key, ""];
+            }
         }));
     }
 
