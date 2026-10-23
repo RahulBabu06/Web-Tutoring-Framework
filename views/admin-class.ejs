@@ -137,7 +137,7 @@
                                         <% } %>
                                     </td>
                                     <td class="register-credit-change-cell">
-                                        <input class="credit-delta-input" type="number" name="attendance[<%= student.id %>][creditDelta]" value="<%= creditDelta %>" step="1" <%= status === "absent" ? "readonly" : "" %>>
+                                        <input class="credit-delta-input" type="number" name="attendance[<%= student.id %>][creditDelta]" aria-label="Credit change for <%= student.name %>" value="<%= creditDelta %>" step="1" <%= status === "absent" ? "readonly" : "" %>>
                                     </td>
                                     <td class="register-contact-cell">
                                         <span><%= student.parentEmail || "No email" %></span>
