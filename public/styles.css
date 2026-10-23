@@ -6,8 +6,8 @@
     --page: #f5f7fa;
     --surface: #ffffff;
     --surface-soft: #eef7f7;
-    --accent: #3c989d;
-    --accent-dark: #286d72;
+    --accent: #2b7a7f;
+    --accent-dark: #1f5a5e;
     --line: #d9e1e7;
     --shadow: 0 12px 30px rgba(25, 32, 43, 0.08);
 }
@@ -179,6 +179,8 @@ header {
 
 .brand-link {
     align-items: center;
+    color: #ffffff;
+    text-decoration: none;
     border-radius: 8px;
     display: inline-flex;
     flex: 0 0 auto;
@@ -657,7 +659,7 @@ form input[type="text"]:focus,
 form select:focus,
 form textarea:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(60, 152, 157, 0.16);
+    box-shadow: 0 0 0 4px rgba(43, 122, 127, 0.16);
     outline: none;
 }
 
@@ -1208,6 +1210,7 @@ form input[type="submit"]:focus-visible {
 
 .attendance-toggle label {
     margin: 0;
+    position: relative;
 }
 
 .attendance-toggle input {
@@ -2093,7 +2096,7 @@ input[type="submit"]:disabled {
 
 .student-search input[type="search"]:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(60, 152, 157, 0.16);
+    box-shadow: 0 0 0 4px rgba(43, 122, 127, 0.16);
     outline: none;
 }
 
