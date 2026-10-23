@@ -9,7 +9,7 @@ export function createBookingRouter({ bookingService, requireAdmin }) {
         const booking = bookingService.validateBooking(req.body);
 
         if (!booking) {
-            return res.status(400).send("Please complete all booking details before submitting.");
+            return res.redirect(303, "/book-now?error=details#page-title");
         }
 
         let isSaved = false;

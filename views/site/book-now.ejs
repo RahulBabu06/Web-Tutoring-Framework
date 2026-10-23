@@ -10,6 +10,9 @@
         <div class="site-section booking-container">
             <h1 id="page-title">Book a class</h1>
             <p class="site-lede">Tell us a little about the student and we'll reply within <%= business.replyWithinHours %> hours to confirm a place.</p>
+            <% if (locals.bookingError) { %>
+                <p class="admin-alert" role="alert">Please check the details: enter a valid email address, the student's name and a few words about their goals, then choose a level and class.</p>
+            <% } %>
 
             <form action="/book-now" method="POST" aria-label="Booking request">
                 <label for="email">Your email address</label>
