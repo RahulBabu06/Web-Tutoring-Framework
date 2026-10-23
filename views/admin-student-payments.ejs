@@ -44,16 +44,17 @@
                 </div>
             <% } %>
 
+            <% const values = locals.values || {}; %>
             <form class="admin-form payment-form" action="/admin/students/<%= student.id %>/payments" method="POST">
                 <div class="form-grid">
                     <div>
                         <label for="amount">Amount paid</label>
-                        <input type="number" id="amount" name="amount" min="0" step="0.01" placeholder="40.00" required>
+                        <input type="number" id="amount" name="amount" min="0" step="0.01" placeholder="40.00" value="<%= values.amount || "" %>" required>
                     </div>
 
                     <div>
                         <label for="creditsPurchased">Credits purchased</label>
-                        <input type="number" id="creditsPurchased" name="creditsPurchased" step="1" value="0">
+                        <input type="number" id="creditsPurchased" name="creditsPurchased" step="1" value="<%= values.creditsPurchased || 0 %>">
                     </div>
 
                     <div>
@@ -64,35 +65,35 @@
                     <div>
                         <label for="status">Status</label>
                         <select id="status" name="status">
-                            <option value="paid">Paid</option>
-                            <option value="pending">Pending</option>
-                            <option value="failed">Failed</option>
-                            <option value="refunded">Refunded</option>
-                            <option value="cancelled">Cancelled</option>
+                            <option value="paid"<%= values.status === "paid" ? " selected" : "" %>>Paid</option>
+                            <option value="pending"<%= values.status === "pending" ? " selected" : "" %>>Pending</option>
+                            <option value="failed"<%= values.status === "failed" ? " selected" : "" %>>Failed</option>
+                            <option value="refunded"<%= values.status === "refunded" ? " selected" : "" %>>Refunded</option>
+                            <option value="cancelled"<%= values.status === "cancelled" ? " selected" : "" %>>Cancelled</option>
                         </select>
                     </div>
 
                     <div>
                         <label for="paymentMethod">Method</label>
                         <select id="paymentMethod" name="paymentMethod">
-                            <option value="bank_transfer">Bank transfer</option>
-                            <option value="cash">Cash</option>
-                            <option value="card">Card</option>
-                            <option value="stripe">Stripe</option>
-                            <option value="other">Other</option>
+                            <option value="bank_transfer"<%= values.paymentMethod === "bank_transfer" ? " selected" : "" %>>Bank transfer</option>
+                            <option value="cash"<%= values.paymentMethod === "cash" ? " selected" : "" %>>Cash</option>
+                            <option value="card"<%= values.paymentMethod === "card" ? " selected" : "" %>>Card</option>
+                            <option value="stripe"<%= values.paymentMethod === "stripe" ? " selected" : "" %>>Stripe</option>
+                            <option value="other"<%= values.paymentMethod === "other" ? " selected" : "" %>>Other</option>
                         </select>
                     </div>
 
                     <div>
                         <label for="currency">Currency</label>
-                        <input type="text" id="currency" name="currency" value="<%= business.currency %>">
+                        <input type="text" id="currency" name="currency" value="<%= values.currency || business.currency %>">
                     </div>
                 </div>
 
                 <input type="hidden" name="provider" value="manual">
 
                 <label for="notes">Notes</label>
-                <textarea id="notes" name="notes" rows="3" placeholder="Optional reference, parent message, or invoice note."></textarea>
+                <textarea id="notes" name="notes" rows="3" placeholder="Optional reference, parent message, or invoice note."><%= values.notes || "" %></textarea>
 
                 <div class="form-actions">
                     <input type="submit" value="Record payment">

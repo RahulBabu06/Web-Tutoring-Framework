@@ -1,5 +1,7 @@
 import nodemailer from "nodemailer";
 
+const requestTimeoutMs = 20 * 1000;
+
 export function createGmailClient({ senderAddress, oauth }) {
     const isConfigured = Boolean(oauth.clientId && oauth.clientSecret && oauth.refreshToken);
     // Nodemailer only builds the MIME message; it is sent through the Gmail API.
@@ -25,7 +27,8 @@ export function createGmailClient({ senderAddress, oauth }) {
                 client_secret: oauth.clientSecret,
                 refresh_token: oauth.refreshToken,
                 grant_type: "refresh_token"
-            })
+            }),
+            signal: AbortSignal.timeout(requestTimeoutMs)
         });
         const data = await response.json().catch(() => ({}));
 
@@ -53,7 +56,8 @@ export function createGmailClient({ senderAddress, oauth }) {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ raw: composed.message.toString("base64url") })
+            body: JSON.stringify({ raw: composed.message.toString("base64url") }),
+            signal: AbortSignal.timeout(requestTimeoutMs)
         });
 
         if (!response.ok) {

@@ -118,7 +118,9 @@ export function createSupabaseClient({ url, adminKey, anonKey, timeoutMs, pageSi
 
         if (!response.ok) {
             const message = payload?.msg || payload?.message || payload?.error_description || payload?.error || responseText || response.statusText;
-            throw new Error(`Account service request failed (${response.status}): ${message}`);
+            const error = new Error(`Account service request failed (${response.status}): ${message}`);
+            error.status = response.status;
+            throw error;
         }
 
         return payload;

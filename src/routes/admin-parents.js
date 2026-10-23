@@ -1,4 +1,5 @@
 import express from "express";
+import { sendNotFound } from "../middleware/errors.js";
 import { RefundStatus } from "../config/classes.js";
 
 export function createAdminParentsRouter({
@@ -43,7 +44,7 @@ export function createAdminParentsRouter({
         const request = isUuid(req.params.id) ? await getRefundRequest(req.params.id) : null;
 
         if (!request) {
-            return res.status(404).send("Refund request not found.");
+            return sendNotFound(res, "Refund request not found.");
         }
 
         if (request.status !== RefundStatus.pending) {

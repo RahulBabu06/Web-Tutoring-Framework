@@ -41,7 +41,9 @@ function createRateLimiter(windowMs, limit, message, keyGenerator) {
         legacyHeaders: false,
         keyGenerator: keyGenerator || ((req) => ipKeyGenerator(getClientIp(req))),
         handler: (req, res) => {
-            res.status(429).send(message);
+            res.status(429).render("error", { pageTitle: "Too many requests", pageDescription: "", currentPath: req.path, status: 429, message }, (renderError, html) => {
+                res.send(renderError ? message : html);
+            });
         }
     });
 }
@@ -65,6 +67,11 @@ export const bookingRateLimiter = createRateLimiter(
     60 * 60 * 1000,
     5,
     "Too many booking requests. Please wait an hour and try again, or contact us directly."
+);
+export const refundRequestRateLimiter = createRateLimiter(
+    60 * 60 * 1000,
+    5,
+    "Too many refund requests. Please wait an hour and try again, or contact us directly."
 );
 export const backupImportRateLimiter = createRateLimiter(
     15 * 60 * 1000,

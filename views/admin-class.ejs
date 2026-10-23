@@ -29,7 +29,7 @@
         <% } %>
 
         <% if (cancelNotice === "cancelled") { %>
-            <div class="admin-success">Class cancelled. Parents are being emailed.</div>
+            <div class="admin-success"><%= locals.parentEmailsWillSend ? "Class cancelled. Parents are being emailed." : "Class cancelled. No emails were sent (parent emails are off or Gmail isn't set up), so let parents know yourself." %></div>
         <% } else if (cancelNotice === "restored") { %>
             <div class="admin-success">Cancellation removed. The class is back on.</div>
         <% } else if (cancelNotice === "has-register") { %>
@@ -75,6 +75,7 @@
                     <label for="classDate">Class date</label>
                     <input type="date" id="classDate" name="classDate" value="<%= classDate %>">
                     <span><%= classDateLabel %></span>
+                    <button type="button" class="button-link button-link-outline" data-mark-all-present>Mark unmarked as present</button>
                 </section>
 
                 <section class="student-table-wrap class-roster-table" aria-label="<%= className %> register">
@@ -99,8 +100,8 @@
                         </thead>
                         <tbody>
                             <% registerRows.forEach(({ student, attendance, freeSkipsLeft, freeSkipAllowance }) => { %>
-                                <% const status = attendance ? attendance.status : "present"; %>
-                                <% const creditDelta = attendance ? attendance.creditDelta : -1; %>
+                                <% const status = attendance ? attendance.status : ""; %>
+                                <% const creditDelta = attendance ? attendance.creditDelta : 0; %>
                                 <tr data-free-skips-left="<%= freeSkipsLeft %>">
                                     <td class="register-student-cell">
                                         <strong><%= student.name %></strong>
@@ -137,7 +138,7 @@
                                         <% } %>
                                     </td>
                                     <td class="register-credit-change-cell">
-                                        <input class="credit-delta-input" type="number" name="attendance[<%= student.id %>][creditDelta]" value="<%= creditDelta %>" step="1" <%= status === "absent" ? "readonly" : "" %>>
+                                        <input class="credit-delta-input" type="number" name="attendance[<%= student.id %>][creditDelta]" aria-label="Credit change for <%= student.name %>" value="<%= creditDelta %>" step="1" <%= status === "absent" ? "readonly" : "" %>>
                                     </td>
                                     <td class="register-contact-cell">
                                         <span><%= student.parentEmail || "No email" %></span>
@@ -157,6 +158,7 @@
                 </section>
 
                 <div class="form-actions register-actions">
+                    <span class="register-status" data-register-status aria-live="polite"></span>
                     <input type="submit" value="Save register">
                 </div>
             </form>
@@ -167,8 +169,13 @@
                     <input type="hidden" name="classDate" value="<%= classDate %>">
                     <label for="cancelReason">Reason (shown to parents, optional)</label>
                     <input type="text" id="cancelReason" name="reason" maxlength="<%= inputLimits.cancelReason %>">
-                    <p>Cancelling <%= classDateLabel %> emails the parents of all <%= registerRows.length %> active students in this class.</p>
-                    <button type="submit" class="button-link">Cancel class and email parents</button>
+                    <% if (locals.parentEmailsWillSend) { %>
+                        <p>Cancelling <%= classDateLabel %> emails the parents of all <%= registerRows.length %> active students in this class.</p>
+                        <button type="submit" class="button-link">Cancel class and email parents</button>
+                    <% } else { %>
+                        <p>Cancelling <%= classDateLabel %> won't email parents, because parent emails are off or Gmail isn't set up.</p>
+                        <button type="submit" class="button-link">Cancel class</button>
+                    <% } %>
                 </form>
             </details>
         <% } %>

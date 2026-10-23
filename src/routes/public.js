@@ -31,7 +31,8 @@ export function createPublicRouter({ formatMoney, isLessonPackForSale, lessonPac
                 ...siteLocals,
                 currentPath: path,
                 pageTitle: page.title,
-                pageDescription: ""
+                pageDescription: "",
+                bookingError: req.query.error === "details"
             });
         });
     });

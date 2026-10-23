@@ -1,22 +1,29 @@
-import { appendFile, mkdir, readFile } from "fs/promises";
+import { createHash, randomUUID } from "crypto";
+import { appendFile, mkdir, readFile, rename, writeFile } from "fs/promises";
 import { join } from "path";
 import { classOptions, getGroupClassForOption, oneToOneOption, oneToOneTimeSlots } from "../config/classes.js";
-import { business, dataDir } from "../config/env.js";
+import { business, dataDir, inputLimits } from "../config/env.js";
 
 const requiredFields = ["email", "childName", "level", "goals", "preferredClass"];
 const bookingRequestsFile = join(dataDir, "booking-requests.jsonl");
-const bookingRequestsShown = 200;
+const bookingStatusFile = join(dataDir, "booking-request-status.json");
+export const bookingStatuses = ["new", "contacted", "booked", "closed"];
 
 export function createBookingService({ email, bookingEmailAddress, getOneToOneLesson, formatMoney }) {
     function validateBooking(body) {
         const hasAllDetails = requiredFields.every((field) => {
             return typeof body[field] === "string" && body[field].trim() !== "";
         });
+        const hasValidDetails = hasAllDetails
+            && body.email.trim().length <= inputLimits.bookingEmail
+            && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email.trim())
+            && body.childName.trim().length >= 2 && body.childName.trim().length <= inputLimits.childName
+            && body.goals.trim().length >= 5 && body.goals.trim().length <= inputLimits.bookingGoals;
         const isOneToOne = Boolean(oneToOneOption) && body.preferredClass === oneToOneOption;
         const hasValidTimeSlot = !isOneToOne || oneToOneTimeSlots.includes(body.preferredTimeSlot);
         const lessonLength = isOneToOne ? getOneToOneLesson(body.lessonLength) : null;
 
-        if (!hasAllDetails || !classOptions.includes(body.preferredClass) || !business.levels.includes(body.level) || !hasValidTimeSlot || (isOneToOne && !lessonLength)) {
+        if (!hasValidDetails || !classOptions.includes(body.preferredClass) || !business.levels.includes(body.level) || !hasValidTimeSlot || (isOneToOne && !lessonLength)) {
             return null;
         }
 
@@ -27,6 +34,7 @@ export function createBookingService({ email, bookingEmailAddress, getOneToOneLe
 
     function toBookingRecord(body, { lessonLength, timeSlot }) {
         return {
+            id: randomUUID(),
             receivedAt: new Date().toISOString(),
             email: body.email.trim(),
             studentName: body.childName.trim(),
@@ -45,6 +53,7 @@ export function createBookingService({ email, bookingEmailAddress, getOneToOneLe
     }
 
     async function listBookingRequests() {
+        const statuses = await readBookingStatuses();
         let contents;
         try {
             contents = await readFile(bookingRequestsFile, "utf8");
@@ -65,7 +74,44 @@ export function createBookingService({ email, bookingEmailAddress, getOneToOneLe
                 }
             })
             .reverse()
-            .slice(0, bookingRequestsShown);
+            .map((record) => {
+                const id = bookingRequestId(record);
+                return { ...record, id, status: statuses[id] || "new" };
+            });
+    }
+
+    // Requests saved before ids were added get a stable id from their contents.
+    function bookingRequestId(record) {
+        return record.id || createHash("sha256").update(`${record.receivedAt}|${record.email}|${record.studentName}`).digest("hex").slice(0, 32);
+    }
+
+    async function readBookingStatuses() {
+        try {
+            return JSON.parse(await readFile(bookingStatusFile, "utf8"));
+        } catch (error) {
+            if (error.code === "ENOENT") {
+                return {};
+            }
+            throw error;
+        }
+    }
+
+    async function setBookingRequestStatus(id, status) {
+        if (!bookingStatuses.includes(status)) {
+            return false;
+        }
+
+        const requests = await listBookingRequests();
+        if (!requests.some((request) => request.id === id)) {
+            return false;
+        }
+
+        const statuses = await readBookingStatuses();
+        statuses[id] = status;
+        const tempFile = `${bookingStatusFile}.${process.pid}.tmp`;
+        await writeFile(tempFile, JSON.stringify(statuses), "utf8");
+        await rename(tempFile, bookingStatusFile);
+        return true;
     }
 
     function sendBookingEmail(body, { lessonLength, timeSlot }) {
@@ -77,5 +123,5 @@ export function createBookingService({ email, bookingEmailAddress, getOneToOneLe
         });
     }
 
-    return { isEmailConfigured: email.isConfigured, bookingRequestsFile, validateBooking, saveBookingRequest, listBookingRequests, sendBookingEmail };
+    return { isEmailConfigured: email.isConfigured, bookingRequestsFile, validateBooking, saveBookingRequest, listBookingRequests, setBookingRequestStatus, sendBookingEmail };
 }
