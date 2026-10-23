@@ -86,6 +86,7 @@ const {
 
 app.locals.inputLimits = inputLimits;
 app.locals.business = business;
+app.locals.isEmailConfigured = isGmailConfigured;
 app.locals.groupClasses = groupClasses;
 app.locals.classOptions = classOptions;
 
@@ -241,6 +242,7 @@ function friendlyAuthError(error, fallback) {
 const adminNavSections = [
     { href: "/admin", label: "Home", matches: (path) => path === "/admin" || path === "/admin/" },
     { href: "/admin/classes", label: groupClasses.length === 1 ? groupClasses[0].name : "Classes", matches: (path) => path.startsWith("/admin/classes") },
+    { href: "/admin/booking-requests", label: "Bookings", matches: (path) => path.startsWith("/admin/booking-requests") },
     { href: "/admin/students", label: "Students", matches: (path) => path.startsWith("/admin/students") },
     { href: "/admin/parent-links", label: "Parent links", countKey: "parentLinks", matches: (path) => path.startsWith("/admin/parent-links") },
     { href: "/admin/refund-requests", label: "Refunds", countKey: "refunds", matches: (path) => path.startsWith("/admin/refund-requests") },
@@ -1143,6 +1145,7 @@ app.use(createAdminBackupsRouter({
 }));
 
 app.use(createBookingRouter({
+    requireAdmin,
     bookingService: createBookingService({
         email: { isConfigured: isGmailConfigured, sendEmail },
         bookingEmailAddress,

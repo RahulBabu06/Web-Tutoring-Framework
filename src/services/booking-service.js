@@ -1,7 +1,11 @@
+import { appendFile, mkdir, readFile } from "fs/promises";
+import { join } from "path";
 import { classOptions, getGroupClassForOption, oneToOneOption, oneToOneTimeSlots } from "../config/classes.js";
-import { business } from "../config/env.js";
+import { business, dataDir } from "../config/env.js";
 
 const requiredFields = ["email", "childName", "level", "goals", "preferredClass"];
+const bookingRequestsFile = join(dataDir, "booking-requests.jsonl");
+const bookingRequestsShown = 200;
 
 export function createBookingService({ email, bookingEmailAddress, getOneToOneLesson, formatMoney }) {
     function validateBooking(body) {
@@ -21,6 +25,49 @@ export function createBookingService({ email, bookingEmailAddress, getOneToOneLe
         return { lessonLength, timeSlot };
     }
 
+    function toBookingRecord(body, { lessonLength, timeSlot }) {
+        return {
+            receivedAt: new Date().toISOString(),
+            email: body.email.trim(),
+            studentName: body.childName.trim(),
+            level: body.level,
+            goals: body.goals.trim(),
+            preferredClass: body.preferredClass,
+            timeSlot,
+            lessonLength: lessonLength ? `${lessonLength.label}, ${formatMoney(lessonLength.pricePence)}` : ""
+        };
+    }
+
+    // Every request is kept on the server too, so none are lost if email isn't set up or fails.
+    async function saveBookingRequest(body, booking) {
+        await mkdir(dataDir, { recursive: true });
+        await appendFile(bookingRequestsFile, JSON.stringify(toBookingRecord(body, booking)) + "\n", "utf8");
+    }
+
+    async function listBookingRequests() {
+        let contents;
+        try {
+            contents = await readFile(bookingRequestsFile, "utf8");
+        } catch (error) {
+            if (error.code === "ENOENT") {
+                return [];
+            }
+            throw error;
+        }
+
+        return contents.split("\n")
+            .filter((line) => line.trim() !== "")
+            .flatMap((line) => {
+                try {
+                    return [JSON.parse(line)];
+                } catch {
+                    return [];
+                }
+            })
+            .reverse()
+            .slice(0, bookingRequestsShown);
+    }
+
     function sendBookingEmail(body, { lessonLength, timeSlot }) {
         return email.sendEmail({
             to: bookingEmailAddress,
@@ -30,5 +77,5 @@ export function createBookingService({ email, bookingEmailAddress, getOneToOneLe
         });
     }
 
-    return { isEmailConfigured: email.isConfigured, validateBooking, sendBookingEmail };
+    return { isEmailConfigured: email.isConfigured, bookingRequestsFile, validateBooking, saveBookingRequest, listBookingRequests, sendBookingEmail };
 }

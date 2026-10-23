@@ -23,7 +23,7 @@
                 <div>
                     <p class="eyebrow">Payment tracking</p>
                     <h1><%= student.name %></h1>
-                    <p>Record manual payments now; Stripe payments can use the same ledger later.</p>
+                    <p>Record cash or bank transfer payments here. Online Stripe payments are added automatically.</p>
                     <p class="student-page-links"><a href="/admin/students/<%= student.id %>/attendance">Attendance</a><a href="/admin/students/<%= student.id %>/edit">Edit student</a></p>
                 </div>
                 <div class="class-roster-summary" aria-label="Student payment summary">
@@ -85,7 +85,7 @@
 
                     <div>
                         <label for="currency">Currency</label>
-                        <input type="text" id="currency" name="currency" value="GBP">
+                        <input type="text" id="currency" name="currency" value="<%= business.currency %>">
                     </div>
                 </div>
 

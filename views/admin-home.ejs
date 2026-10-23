@@ -21,6 +21,10 @@
             </div>
         </section>
 
+        <% if (!isEmailConfigured) { %>
+            <div class="admin-alert"><p>Email isn't set up, so booking requests are only saved to the <a href="/admin/booking-requests">Bookings</a> page and parents get no emails. See docs/SETUP.md to set up the Gmail API.</p></div>
+        <% } %>
+
         <% if (!isSupabaseConfigured) { %>
             <div class="admin-alert"><p>Database service is not configured yet. Finish the server setup before managing records.</p></div>
         <% } else if (setupError) { %>

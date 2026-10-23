@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Requests | <%= business.shortName %> Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <%- include("partials/admin-nav") %>
+
+    <main class="admin-page">
+        <section class="admin-page-heading">
+            <p class="eyebrow">Website</p>
+            <h1>Booking Requests</h1>
+            <p>Requests sent from the booking form, newest first. Reply to the email address given, then add the student under Students.</p>
+        </section>
+
+        <% if (!isEmailConfigured) { %>
+            <div class="admin-alert"><p>Email isn't set up, so you won't be emailed about new requests. Check this page, or set up the Gmail API (see docs/SETUP.md).</p></div>
+        <% } %>
+
+        <% if (requests.length === 0) { %>
+            <section class="empty-state">
+                <h2>No booking requests yet</h2>
+                <p>Requests from the <a href="/book-now">booking form</a> will appear here.</p>
+            </section>
+        <% } else { %>
+            <div class="refund-request-list">
+                <% requests.forEach((request) => { %>
+                    <article class="parent-request-card">
+                        <div>
+                            <strong><%= request.studentName %>, <%= request.level %></strong>
+                            <span><a href="mailto:<%= request.email %>"><%= request.email %></a>, <%= request.receivedLabel %></span>
+                        </div>
+                        <span class="status-pill status-active"><%= request.preferredClass %></span>
+                        <p class="parent-request-note">Time: <%= request.timeSlot %><%= request.lessonLength ? `. Lesson: ${request.lessonLength}` : "" %></p>
+                        <p class="parent-request-note">Goals: <%= request.goals %></p>
+                    </article>
+                <% }) %>
+            </div>
+        <% } %>
+    </main>
+</body>
+</html>
