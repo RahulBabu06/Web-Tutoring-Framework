@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= className %> | <%= business.shortName %> Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <%- include("partials/admin-nav") %>
+
+    <main class="admin-page">
+        <section class="class-roster-heading">
+            <div>
+                <p class="eyebrow"><%= groupClass.dayLabel %> register &middot; <%= classDateLabel %></p>
+                <h1><%= className %></h1>
+                <p>Take attendance and update lesson credits from one page.</p>
+            </div>
+            <div class="class-roster-summary" aria-label="Class summary">
+                <span><% if (classTime) { %><strong><%= classTime %></strong> <% } %>every <%= groupClass.dayLabel %></span>
+                <span><strong><%= registerRows.length %></strong> active student<%= registerRows.length === 1 ? "" : "s" %></span>
+                <span><strong><%= totalCredits %></strong> total credits</span>
+                <button type="button" class="button-link button-link-outline print-register-button" data-print-page>Print register</button>
+            </div>
+        </section>
+
+        <% if (saved) { %>
+            <div class="admin-success">Register saved and credits updated.</div>
+        <% } %>
+
+        <% if (cancelNotice === "cancelled") { %>
+            <div class="admin-success">Class cancelled. Parents are being emailed.</div>
+        <% } else if (cancelNotice === "restored") { %>
+            <div class="admin-success">Cancellation removed. The class is back on.</div>
+        <% } else if (cancelNotice === "has-register") { %>
+            <div class="admin-alert"><p>This class already has a saved register, so it can't be cancelled.</p></div>
+        <% } else if (cancelNotice === "past") { %>
+            <div class="admin-alert"><p>Only today's or future classes can be cancelled.</p></div>
+        <% } else if (cancelNotice === "setup") { %>
+            <div class="admin-alert"><p>Cancelling classes needs a database update. Run supabase/schema.sql in the Supabase SQL editor, then try again.</p></div>
+        <% } %>
+
+        <% if (schemaUpdateNeeded) { %>
+            <div class="admin-alert">
+                <p>Register not saved: the database needs updating. Run supabase/schema.sql in the Supabase SQL editor, then save again.</p>
+            </div>
+        <% } %>
+
+        <% if (!isSupabaseConfigured) { %>
+            <div class="admin-alert">
+                <p>Database service is not configured yet. Finish the server setup before taking the register.</p>
+            </div>
+        <% } else if (setupError) { %>
+            <div class="admin-alert">
+                <p><%= setupError %></p>
+            </div>
+        <% } else if (cancellation) { %>
+            <section class="empty-state">
+                <h2>Class cancelled: <%= classDateLabel %></h2>
+                <p><%= cancellation.reason ? `Reason: ${cancellation.reason}` : "No reason given." %> No lesson credits or free skips are used, and no register is taken for this date.</p>
+                <form action="/admin/classes/<%= encodeURIComponent(groupClass.id) %>/uncancel" method="POST">
+                    <input type="hidden" name="classDate" value="<%= classDate %>">
+                    <button type="submit" class="button-link">Undo cancellation</button>
+                </form>
+            </section>
+        <% } else if (registerRows.length === 0) { %>
+            <section class="empty-state">
+                <h2>No current students in this class</h2>
+                <p>Set a student to active with preferred class <%= groupClass.option %> to show them here.</p>
+                <a class="button-link" href="/admin/students/new">Add student</a>
+            </section>
+        <% } else { %>
+            <form class="register-form" action="/admin/classes/<%= encodeURIComponent(groupClass.id) %>/register" method="POST">
+                <section class="register-toolbar" aria-label="Register details">
+                    <label for="classDate">Class date</label>
+                    <input type="date" id="classDate" name="classDate" value="<%= classDate %>">
+                    <span><%= classDateLabel %></span>
+                </section>
+
+                <section class="student-table-wrap class-roster-table" aria-label="<%= className %> register">
+                    <table class="student-table register-table">
+                        <colgroup>
+                            <col class="register-student-col">
+                            <col class="register-credits-col">
+                            <col class="register-attendance-col">
+                            <col class="register-credit-change-col">
+                            <col class="register-contact-col">
+                            <col class="register-actions-col">
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Credits</th>
+                                <th>Attendance</th>
+                                <th>Credit change</th>
+                                <th>Contact</th>
+                                <th class="register-actions-heading">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% registerRows.forEach(({ student, attendance, freeSkipsLeft, freeSkipAllowance }) => { %>
+                                <% const status = attendance ? attendance.status : "present"; %>
+                                <% const creditDelta = attendance ? attendance.creditDelta : -1; %>
+                                <tr data-free-skips-left="<%= freeSkipsLeft %>">
+                                    <td class="register-student-cell">
+                                        <strong><%= student.name %></strong>
+                                        <% if (student.displayNotes) { %>
+                                            <span><%= student.displayNotes %></span>
+                                        <% } %>
+                                    </td>
+                                    <td class="register-credit-cell">
+                                        <span class="credit-count"><%= student.credits %></span>
+                                    </td>
+                                    <td class="register-attendance-cell">
+                                        <div class="attendance-toggle" role="radiogroup" aria-label="Attendance for <%= student.name %>">
+                                            <label>
+                                                <input type="radio" name="attendance[<%= student.id %>][status]" value="present" <%= status === "present" ? "checked" : "" %>>
+                                                <span>Present</span>
+                                            </label>
+                                            <label>
+                                                <input type="radio" name="attendance[<%= student.id %>][status]" value="absent" <%= status === "absent" ? "checked" : "" %>>
+                                                <span>Absent</span>
+                                            </label>
+                                        </div>
+                                        <p class="register-skip-note">
+                                            <% if (freeSkipsLeft > 0) { %>
+                                                Absence is a free skip (<%= freeSkipsLeft %> of <%= freeSkipAllowance %> left)
+                                            <% } else { %>
+                                                No free skips left: absence costs 1 credit
+                                            <% } %>
+                                        </p>
+                                        <% if (freeSkipsLeft === 0) { %>
+                                            <label class="register-waive" data-waive-label <%= status === "absent" ? "" : "hidden" %>>
+                                                <input type="checkbox" name="attendance[<%= student.id %>][waiveCharge]" value="1" <%= attendance && attendance.chargeType === "waived" ? "checked" : "" %>>
+                                                <span>Waive charge</span>
+                                            </label>
+                                        <% } %>
+                                    </td>
+                                    <td class="register-credit-change-cell">
+                                        <input class="credit-delta-input" type="number" name="attendance[<%= student.id %>][creditDelta]" value="<%= creditDelta %>" step="1" <%= status === "absent" ? "readonly" : "" %>>
+                                    </td>
+                                    <td class="register-contact-cell">
+                                        <span><%= student.parentEmail || "No email" %></span>
+                                        <span><%= student.phone || "No phone" %></span>
+                                    </td>
+                                    <td class="register-actions-cell">
+                                        <div class="table-actions">
+                                            <a class="table-action" href="/admin/students/<%= student.id %>/attendance">History</a>
+                                            <a class="table-action" href="/admin/students/<%= student.id %>/payments">Payments</a>
+                                            <a class="table-action" href="/admin/students/<%= student.id %>/edit">Edit</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </section>
+
+                <div class="form-actions register-actions">
+                    <input type="submit" value="Save register">
+                </div>
+            </form>
+
+            <details class="class-cancel-panel">
+                <summary>Cancel this class</summary>
+                <form action="/admin/classes/<%= encodeURIComponent(groupClass.id) %>/cancel" method="POST">
+                    <input type="hidden" name="classDate" value="<%= classDate %>">
+                    <label for="cancelReason">Reason (shown to parents, optional)</label>
+                    <input type="text" id="cancelReason" name="reason" maxlength="<%= inputLimits.cancelReason %>">
+                    <p>Cancelling <%= classDateLabel %> emails the parents of all <%= registerRows.length %> active students in this class.</p>
+                    <button type="submit" class="button-link">Cancel class and email parents</button>
+                </form>
+            </details>
+        <% } %>
+    </main>
+
+    <script src="/admin/class-register.js" defer></script>
+</body>
+</html>

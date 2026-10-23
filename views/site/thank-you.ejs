@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<%- include("../partials/site-head") %>
+</head>
+<body class="site-page">
+<%- include("../partials/site-header") %>
+
+    <main class="site-main">
+        <section class="site-section" aria-labelledby="page-title">
+            <h1 id="page-title">Thank you</h1>
+            <p class="site-lede">We've received your booking request and will reply within <%= business.replyWithinHours %> hours.</p>
+            <p class="site-actions">
+                <a class="button-link" href="/">Back to the home page</a>
+                <a class="secondary-link" href="/parents/register">Create a parent account</a>
+            </p>
+        </section>
+    </main>
+
+<%- include("../partials/site-footer") %>
+</body>
+</html>

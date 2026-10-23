@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= mode === "new" ? "Add Student" : "Edit Student" %> | <%= business.shortName %> Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <%- include("partials/admin-nav") %>
+
+    <main class="admin-page">
+        <section class="admin-page-heading">
+            <h1><%= mode === "new" ? "Add Student" : "Edit Student" %></h1>
+            <p>Keep parent contact details here now; later these can be linked to parent accounts.</p>
+        </section>
+
+        <% if (errors.length > 0) { %>
+            <div class="admin-alert">
+                <% errors.forEach((error) => { %>
+                    <p><%= error %></p>
+                <% }) %>
+            </div>
+        <% } %>
+
+        <form class="admin-form" action="<%= mode === "new" ? "/admin/students" : "/admin/students/" + student.id %>" method="POST">
+            <label for="name">Student name</label>
+            <input type="text" id="name" name="name" value="<%= student.name || "" %>" required>
+
+            <label for="parentName">Parent name</label>
+            <input type="text" id="parentName" name="parentName" value="<%= student.parentName || "" %>">
+
+            <label for="parentEmail">Parent email</label>
+            <input type="email" id="parentEmail" name="parentEmail" value="<%= student.parentEmail || "" %>">
+
+            <label for="phone">Phone</label>
+            <input type="text" id="phone" name="phone" value="<%= student.phone || "" %>">
+
+            <label for="preferredClass">Preferred class</label>
+            <select id="preferredClass" name="preferredClass">
+                <option value="">Not set</option>
+                <% classOptions.forEach((option) => { %>
+                    <option value="<%= option %>" <%= student.preferredClass === option ? "selected" : "" %>><%= option %></option>
+                <% }) %>
+                <% if (student.preferredClass && !classOptions.includes(student.preferredClass)) { %>
+                    <option value="<%= student.preferredClass %>" selected><%= student.preferredClass %> (no longer offered)</option>
+                <% } %>
+            </select>
+
+            <label for="credits">Credits</label>
+            <input type="number" id="credits" name="credits" value="<%= Number.isFinite(Number(student.credits)) ? student.credits : 0 %>" step="1">
+            <% if (mode !== "new") { %>
+                <input type="hidden" name="originalCredits" value="<%= student.originalCredits ?? student.credits %>">
+            <% } %>
+
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="active" <%= student.status !== "inactive" ? "selected" : "" %>>Active</option>
+                <option value="inactive" <%= student.status === "inactive" ? "selected" : "" %>>Inactive</option>
+            </select>
+
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes" rows="4"><%= student.displayNotes || student.notes || "" %></textarea>
+
+            <div class="form-actions">
+                <input type="submit" value="<%= mode === "new" ? "Create student" : "Save changes" %>">
+                <a class="secondary-link" href="/admin/students">Cancel</a>
+            </div>
+        </form>
+    </main>
+</body>
+</html>

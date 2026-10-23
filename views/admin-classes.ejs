@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classes | <%= business.shortName %> Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <%- include("partials/admin-nav") %>
+
+    <main class="admin-page">
+        <section class="admin-page-heading">
+            <div>
+                <h1>Classes</h1>
+                <p>Pick a group class to take its register or cancel a date.</p>
+            </div>
+        </section>
+
+        <% if (notFound) { %>
+            <div class="admin-alert"><p>That class isn't in the business config. Pick one below.</p></div>
+        <% } %>
+
+        <% if (groupClasses.length === 0) { %>
+            <section class="empty-state">
+                <h2>No group classes configured</h2>
+                <p>Add entries to <code>groupClasses</code> in business.config.json, then restart the server.</p>
+            </section>
+        <% } else { %>
+            <ul class="admin-todo-list">
+                <% groupClasses.forEach((groupClass) => { %>
+                    <li>
+                        <div>
+                            <strong><%= groupClass.name %></strong>
+                            <p>Every <%= groupClass.dayLabel %><%= groupClass.time ? `, ${groupClass.time}` : "" %></p>
+                        </div>
+                        <a class="table-action" href="/admin/classes/<%= encodeURIComponent(groupClass.id) %>">Open register</a>
+                    </li>
+                <% }) %>
+            </ul>
+        <% } %>
+    </main>
+</body>
+</html>

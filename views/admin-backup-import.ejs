@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backup | <%= business.shortName %> Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <%- include("partials/admin-nav") %>
+
+    <main class="admin-page">
+        <section class="admin-page-heading">
+            <h1>Backup</h1>
+            <p>Keep a copy of student, attendance and payment records, or load records back in from a backup.</p>
+        </section>
+
+        <% if (savedBackup) { %>
+            <div class="admin-success">Local backup saved as <code><%= savedBackup %></code>.</div>
+        <% } %>
+
+        <section class="admin-section-heading">
+            <div>
+                <h2>Make a backup</h2>
+                <p>Download a JSON file to keep somewhere safe, or save a copy in the server's backups folder.</p>
+            </div>
+        </section>
+        <div class="backup-actions">
+            <a class="button-link" href="/admin/backup/download">Download backup</a>
+            <form action="/admin/backup/save" method="POST">
+                <button type="submit">Save backup on server</button>
+            </form>
+        </div>
+
+        <section class="admin-section-heading">
+            <div>
+                <h2>Import a backup</h2>
+                <p>Load student records from a downloaded website backup or an older JSON backup.</p>
+            </div>
+        </section>
+
+        <% if (errors.length > 0) { %>
+            <div class="admin-alert">
+                <% errors.forEach((error) => { %>
+                    <p><%= error %></p>
+                <% }) %>
+            </div>
+        <% } %>
+
+        <% if (result) { %>
+            <div class="admin-success">
+                <p>Imported <%= result.imported %> student record<%= result.imported === 1 ? "" : "s" %><%= result.attendanceImported ? " and " + result.attendanceImported + " attendance record" + (result.attendanceImported === 1 ? "" : "s") : "" %><%= result.paymentsImported ? " and " + result.paymentsImported + " payment record" + (result.paymentsImported === 1 ? "" : "s") : "" %><%= result.skipped ? " and skipped " + result.skipped : "" %>.<% if (result.replaced) { %> Records that were not in the backup were removed: <%= result.removed.students %> student<%= result.removed.students === 1 ? "" : "s" %>, <%= result.removed.attendance %> attendance record<%= result.removed.attendance === 1 ? "" : "s" %> and <%= result.removed.payments %> payment record<%= result.removed.payments === 1 ? "" : "s" %>.<% } %></p>
+            </div>
+        <% } %>
+
+        <% if (removals) { %>
+            <div class="admin-alert">
+                <p>Nothing was imported yet. Replacing with this backup would permanently remove <%= removals.students %> student<%= removals.students === 1 ? "" : "s" %>, <%= removals.attendance %> attendance record<%= removals.attendance === 1 ? "" : "s" %> and <%= removals.payments %> payment record<%= removals.payments === 1 ? "" : "s" %> that are in the database now but not in the backup.</p>
+                <p>If the backup is older or incomplete, download a fresh backup first. To go ahead anyway, tick the confirmation box below and import again.</p>
+            </div>
+        <% } %>
+
+        <% if (!isSupabaseConfigured) { %>
+            <div class="admin-alert">
+                <p>Database service is not configured yet. Finish the server setup before importing a backup.</p>
+            </div>
+        <% } %>
+
+        <form class="admin-form" id="backupImportForm" action="/admin/backup/import" method="POST">
+            <label for="backupFile">Backup JSON file</label>
+            <input type="file" id="backupFile" accept=".json,application/json">
+
+            <label for="backupJson">Backup JSON</label>
+            <textarea class="backup-json-input" id="backupJson" name="backupJson" rows="9" placeholder="Choose a JSON file above, or paste the backup JSON here."><%= backupJson %></textarea>
+
+            <label class="checkbox-row" for="replaceExisting">
+                <input type="checkbox" id="replaceExisting" name="replaceExisting" value="1" <%= removals ? "checked" : "" %>>
+                <span>Replace existing records with this backup (records not in the backup are removed)</span>
+            </label>
+
+            <% if (removals) { %>
+                <label class="checkbox-row" for="confirmRemovals">
+                    <input type="checkbox" id="confirmRemovals" name="confirmRemovals" value="1">
+                    <span>Yes, permanently remove the records listed above</span>
+                </label>
+            <% } %>
+
+            <div class="form-actions">
+                <input type="submit" value="Import backup" <%= isSupabaseConfigured ? "" : "disabled" %>>
+                            </div>
+        </form>
+    </main>
+
+    <script src="/admin/backup-import.js" defer></script>
+</body>
+</html>

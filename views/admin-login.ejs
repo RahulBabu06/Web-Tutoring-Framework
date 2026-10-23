@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login | <%= business.name %></title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <main class="admin-auth-page">
+        <section class="admin-auth-card">
+            <span class="brand-wordmark admin-auth-logo"><%= business.shortName %></span>
+            <h1>Admin Login</h1>
+            <p>Use this area to manage student records and local backups.</p>
+
+            <% if (!isConfigured) { %>
+                <div class="admin-alert">
+                    Set <code>ADMIN_PASSWORD</code> and a random <code>ADMIN_SESSION_SECRET</code> (at least 32 characters) before logging in.
+                </div>
+            <% } %>
+
+            <% if (error) { %>
+                <div class="admin-alert">
+                    The password was incorrect.
+                </div>
+            <% } %>
+
+            <form class="admin-form" action="/admin/login" method="POST">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" autocomplete="current-password" required>
+                <input type="submit" value="Log in" <%= isConfigured ? "" : "disabled" %>>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

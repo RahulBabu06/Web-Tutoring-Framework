@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance History | <%= business.shortName %> Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <%- include("partials/admin-nav") %>
+
+    <main class="admin-page">
+        <% if (!isSupabaseConfigured) { %>
+            <div class="admin-alert">
+                <p>Database service is not configured yet. Finish the server setup before viewing attendance history.</p>
+            </div>
+        <% } else if (setupError) { %>
+            <div class="admin-alert">
+                <p><%= setupError %></p>
+            </div>
+        <% } else if (student) { %>
+            <section class="class-roster-heading">
+                <div>
+                    <p class="eyebrow">Attendance history</p>
+                    <h1><%= student.name %></h1>
+                    <p>Group class attendance and credit changes.</p>
+                    <p class="student-page-links"><a href="/admin/students/<%= student.id %>/payments">Payments</a><a href="/admin/students/<%= student.id %>/edit">Edit student</a></p>
+                </div>
+                <div class="class-roster-summary" aria-label="Student attendance summary">
+                    <span><strong><%= student.credits %></strong> current credits</span>
+                    <span><strong><%= attendance.length %></strong> saved register<%= attendance.length === 1 ? "" : "s" %></span>
+                    <span><strong><%= freeSkipsLeft %> of <%= freeSkipAllowance %></strong> free skips left</span>
+                </div>
+            </section>
+
+            <% if (refunded) { %>
+                <div class="admin-success">Credit refunded and the absence marked as charge waived.</div>
+            <% } %>
+
+            <% if (attendance.length === 0) { %>
+                <section class="empty-state">
+                    <h2>No attendance yet</h2>
+                    <p>This student has no saved register entries yet.</p>
+                    <a class="button-link" href="/admin/classes">Take register</a>
+                </section>
+            <% } else { %>
+                <section class="student-table-wrap" aria-label="Attendance history">
+                    <table class="student-table attendance-history-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Charge</th>
+                                <th>Credit change</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% attendance.forEach((record) => { %>
+                                <tr>
+                                    <td><%= record.classDate %></td>
+                                    <td><span class="status-pill status-<%= record.status === "present" ? "active" : "inactive" %>"><%= record.status %></span></td>
+                                    <td>
+                                        <%= record.chargeLabel %>
+                                        <% if (isChargedAbsence(record)) { %>
+                                            <form class="inline-form" action="/admin/attendance/<%= record.id %>/refund" method="POST">
+                                                <button type="submit" class="table-action">Refund 1 credit</button>
+                                            </form>
+                                        <% } %>
+                                    </td>
+                                    <td><%= record.creditDelta %></td>
+                                    <td><span class="notes-cell"><%= record.notes || "No notes" %></span></td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </section>
+            <% } %>
+        <% } %>
+    </main>
+</body>
+</html>

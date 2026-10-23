@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Child | <%= business.name %> Parent Portal</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/cookie-notice.js" defer></script>
+</head>
+<body>
+    <header class="admin-header">
+        <nav class="admin-nav" aria-label="Parent navigation">
+            <a class="brand-link" href="/" aria-label="<%= business.name %> home"><span class="brand-wordmark"><%= business.shortName %></span></a>
+            <div class="admin-nav-actions">
+                <a href="/parents">Dashboard</a>
+                <form action="/parents/logout" method="POST">
+                    <button type="submit">Log out</button>
+                </form>
+            </div>
+        </nav>
+    </header>
+
+    <main class="admin-page">
+        <section class="admin-page-heading">
+            <p class="eyebrow">Parent portal</p>
+            <h1>Add Child</h1>
+            <p>Request access to an existing student record. Child data appears only after approval.</p>
+        </section>
+
+        <% if (errors.length > 0) { %>
+            <div class="admin-alert">
+                <% errors.forEach((error) => { %>
+                    <p><%= error %></p>
+                <% }) %>
+            </div>
+        <% } %>
+
+        <form class="admin-form" action="/parents/children" method="POST">
+            <label for="childName">Child name</label>
+            <input type="text" id="childName" name="childName" value="<%= values.childName || "" %>" autocomplete="off" aria-describedby="childNameHint" maxlength="<%= inputLimits.childName %>" required>
+            <p class="field-hint" id="childNameHint">Use your child's full name as it was given when they joined classes.</p>
+
+            <label for="relationship">Your relationship to the child</label>
+            <% const relationshipOptions = ["Parent", "Guardian", "Carer", "Grandparent", "Other family member"]; %>
+            <select id="relationship" name="relationship" required>
+                <% relationshipOptions.forEach((option) => { %>
+                    <option value="<%= option %>" <%= (values.relationship || "Parent") === option ? "selected" : "" %>><%= option %></option>
+                <% }) %>
+                <% if (values.relationship && !relationshipOptions.includes(values.relationship)) { %>
+                    <option value="<%= values.relationship %>" selected><%= values.relationship %></option>
+                <% } %>
+            </select>
+
+            <label for="notes">Notes for <%= business.name %> <span class="field-optional">(optional)</span></label>
+            <textarea id="notes" name="notes" rows="4" maxlength="<%= inputLimits.childLinkNotes %>" placeholder="Optional details that help match the right student record."><%= values.notes || "" %></textarea>
+
+            <div class="form-actions">
+                <input type="submit" value="Request access">
+                <a class="secondary-link" href="/parents">Cancel</a>
+            </div>
+        </form>
+    </main>
+</body>
+</html>

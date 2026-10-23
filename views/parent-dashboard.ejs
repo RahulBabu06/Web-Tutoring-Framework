@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Portal | <%= business.name %></title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/cookie-notice.js" defer></script>
+</head>
+<body>
+    <header class="admin-header">
+        <nav class="admin-nav" aria-label="Parent navigation">
+            <a class="brand-link" href="/" aria-label="<%= business.name %> home"><span class="brand-wordmark"><%= business.shortName %></span></a>
+            <div class="admin-nav-actions">
+                <a href="/parents/children/new">Add child</a>
+                <a href="/book-now">Book a class</a>
+                <form action="/parents/logout" method="POST">
+                    <button type="submit">Log out</button>
+                </form>
+            </div>
+        </nav>
+    </header>
+
+    <main class="admin-page">
+        <section class="class-roster-heading">
+            <div>
+                <p class="eyebrow">Parent portal</p>
+                <h1>Welcome, <%= profile.fullName %></h1>
+                <p>View linked children, lesson credits, recent attendance, and payment history.</p>
+            </div>
+            <div class="class-roster-summary" aria-label="Parent portal summary">
+                <span><strong><%= dashboard.children.length %></strong> linked child<%= dashboard.children.length === 1 ? "" : "ren" %></span>
+                <span><strong><%= dashboard.pendingLinks.length %></strong> pending request<%= dashboard.pendingLinks.length === 1 ? "" : "s" %></span>
+            </div>
+        </section>
+
+        <% if (requested) { %>
+            <div class="admin-success">
+                <p>Child access request sent. It will appear here once approved.</p>
+            </div>
+        <% } %>
+
+        <% if (checkoutStatus === "paid") { %>
+            <div class="admin-success">
+                <p>Payment received, thank you. <%= checkoutIsOneToOne ? "Your 1-1 lesson payment is shown under Payments below." : "The lessons have been added below." %></p>
+            </div>
+        <% } else if (checkoutStatus === "processing") { %>
+            <div class="admin-success">
+                <p>Payment is processing. <%= checkoutIsOneToOne ? "It will show under Payments as soon as it goes through." : "The lessons will be added as soon as it goes through." %></p>
+            </div>
+        <% } else if (checkoutStatus === "cancelled") { %>
+            <div class="admin-alert">
+                <p>Payment cancelled. You haven't been charged.</p>
+            </div>
+        <% } %>
+
+        <% if (refundRequested) { %>
+            <div class="admin-success">
+                <p>Refund request sent. We'll review it and update the class below.</p>
+            </div>
+        <% } %>
+
+        <% if (dashboard.pendingLinks.length > 0 || dashboard.rejectedLinks.length > 0) { %>
+            <section class="parent-request-list" aria-label="Child link requests">
+                <h2>Requests</h2>
+                <% dashboard.pendingLinks.forEach((link) => { %>
+                    <article class="parent-request-card">
+                        <div>
+                            <strong><%= link.requestedChildName %></strong>
+                            <span><%= link.requestedLabel ? "Requested " + link.requestedLabel : "Request sent" %></span>
+                        </div>
+                        <span class="status-pill status-pending">Waiting for approval</span>
+                        <p class="parent-request-note">We'll link your child once we've matched them to our records.</p>
+                    </article>
+                <% }) %>
+                <% dashboard.rejectedLinks.forEach((link) => { %>
+                    <article class="parent-request-card is-rejected">
+                        <div>
+                            <strong><%= link.requestedChildName %></strong>
+                            <span><%= link.reviewedLabel ? "Reviewed " + link.reviewedLabel : "Reviewed" %></span>
+                        </div>
+                        <span class="status-pill status-inactive">Not approved</span>
+                        <p class="parent-request-note"><%= link.reviewedNotes || "We couldn't match this request to a student. Check the name and try again, or contact us." %></p>
+                        <a class="button-link parent-request-retry" href="/parents/children/new?childName=<%= encodeURIComponent(link.requestedChildName) %>&relationship=<%= encodeURIComponent(link.relationship) %>">Try again</a>
+                    </article>
+                <% }) %>
+            </section>
+        <% } %>
+
+        <% if (dashboard.children.length === 0) { %>
+            <section class="empty-state">
+                <h2>No linked children yet</h2>
+                <p>Add your child and wait for the link to be approved.</p>
+                <a class="button-link" href="/parents/children/new">Add child</a>
+            </section>
+        <% } else { %>
+            <section class="parent-child-grid" aria-label="Linked children">
+                <% dashboard.children.forEach(({ student, attendance, payments, freeSkipsLeft, freeSkipAllowance }) => { %>
+                    <article class="parent-child-card">
+                        <div class="parent-child-card-header">
+                            <div>
+                                <p class="eyebrow">Student</p>
+                                <h2><%= student.name %></h2>
+                                <p><%= student.preferredClass || "Class not set" %></p>
+                            </div>
+                            <div class="parent-credit-balance<%= student.credits <= lowCreditThreshold ? " is-low" : "" %>">
+                                <strong><%= Math.abs(student.credits) %></strong>
+                                <span><%= student.credits < 0 ? "lesson" + (student.credits === -1 ? "" : "s") + " owed" : "lesson" + (student.credits === 1 ? "" : "s") + " left" %></span>
+                            </div>
+                        </div>
+
+                        <% if (student.credits <= 0) { %>
+                            <div class="admin-alert parent-credit-alert">
+                                <p><strong>No lessons left.</strong> <% if (lessonPack.enabled) { %>Buy more lessons below before the next class.<% } else { %>Please <a href="/contact">contact us</a> to top up before the next class.<% } %></p>
+                            </div>
+                        <% } else if (student.credits <= lowCreditThreshold) { %>
+                            <div class="admin-alert parent-credit-alert">
+                                <p><strong>Running low.</strong> <% if (lessonPack.enabled) { %>Buy more lessons below.<% } else { %><a href="/contact">Contact us</a> to top up lessons.<% } %></p>
+                            </div>
+                        <% } %>
+
+                        <% if (lessonPack.enabled) { %>
+                            <form class="parent-buy-lessons" method="post" action="/parents/children/<%= student.id %>/checkout">
+                                <button type="submit" class="button-link">Buy <%= lessonPack.credits %> lessons for <%= lessonPack.priceLabel %></button>
+                                <p class="parent-history-note">Pay securely by card, Apple Pay or Google Pay with Stripe. Lessons are added as soon as the payment goes through.</p>
+                            </form>
+                        <% } %>
+
+                        <% if (oneToOneLessons.length > 0) { %>
+                            <form class="parent-buy-lessons parent-buy-one-to-one" method="post" action="/parents/children/<%= student.id %>/checkout">
+                                <h3>Pay for a 1-1 lesson</h3>
+                                <div class="parent-buy-options">
+                                    <% oneToOneLessons.forEach((lesson) => { %>
+                                        <button type="submit" class="button-link" name="oneToOneMinutes" value="<%= lesson.minutes %>"><%= lesson.minutes === 60 ? "1 hour" : lesson.minutes + " minutes" %>: <%= lesson.priceLabel %></button>
+                                    <% }) %>
+                                </div>
+                                <p class="parent-history-note">For a 1-1 lesson you've arranged with us. It shows under Payments and doesn't change the group class lessons left.</p>
+                            </form>
+                        <% } %>
+
+                        <div class="parent-child-section">
+                            <h3>Recent classes</h3>
+                            <p class="parent-history-note">Free skips left: <strong><%= freeSkipsLeft %> of <%= freeSkipAllowance %></strong> (up to <%= maxFreeSkipsHeld %> at a time, topped back up for every <%= business.attendance.paidCreditsPerBlock %> lessons paid for)</p>
+                            <% if (attendance.length === 0) { %>
+                                <p class="parent-history-empty">No classes recorded yet.</p>
+                            <% } else { %>
+                                <ul class="parent-history">
+                                    <% attendance.forEach((record) => { %>
+                                        <li>
+                                            <span class="parent-history-date"><%= record.dateLabel %></span>
+                                            <span class="status-pill status-<%= record.status === "present" ? "active" : "inactive" %>"><%= record.status %></span>
+                                            <span class="parent-history-detail"><%= record.creditLabel %></span>
+                                            <% if (record.refundRequest) { %>
+                                                <span class="parent-refund-status"><%= { pending: "Refund requested, waiting for review", approved: "Refund approved", declined: "Refund declined" }[record.refundRequest.status] %><%= record.refundRequest.status === "declined" && record.refundRequest.adminNotes ? ": " + record.refundRequest.adminNotes : "" %></span>
+                                            <% } else if (record.canRequestRefund) { %>
+                                                <a class="parent-refund-link" href="/parents/refunds/new?attendanceId=<%= record.id %>">Request refund</a>
+                                            <% } %>
+                                        </li>
+                                    <% }) %>
+                                </ul>
+                            <% } %>
+                        </div>
+
+                        <div class="parent-child-section">
+                            <h3>Payments</h3>
+                            <% if (payments.length === 0) { %>
+                                <p class="parent-history-empty">No payments recorded yet.</p>
+                            <% } else { %>
+                                <ul class="parent-history">
+                                    <% payments.forEach((payment) => { %>
+                                        <li>
+                                            <span class="parent-history-date"><%= payment.paidDateLabel || "Date not set" %></span>
+                                            <span class="status-pill status-<%= payment.status === "paid" ? "active" : "inactive" %>"><%= payment.status %></span>
+                                            <span class="parent-history-detail"><strong><%= payment.amount %></strong><% if (payment.creditsLabel) { %> &middot; <%= payment.creditsLabel %><% } %></span>
+                                        </li>
+                                    <% }) %>
+                                </ul>
+                            <% } %>
+                        </div>
+                    </article>
+                <% }) %>
+            </section>
+        <% } %>
+    </main>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payments | <%= business.shortName %> Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <%- include("partials/admin-nav") %>
+
+    <main class="admin-page">
+        <% if (!isSupabaseConfigured) { %>
+            <div class="admin-alert">
+                <p>Database service is not configured yet. Finish the server setup before tracking payments.</p>
+            </div>
+        <% } else if (setupError) { %>
+            <div class="admin-alert">
+                <p><%= setupError %></p>
+            </div>
+        <% } else if (student) { %>
+            <section class="class-roster-heading">
+                <div>
+                    <p class="eyebrow">Payment tracking</p>
+                    <h1><%= student.name %></h1>
+                    <p>Record manual payments now; Stripe payments can use the same ledger later.</p>
+                    <p class="student-page-links"><a href="/admin/students/<%= student.id %>/attendance">Attendance</a><a href="/admin/students/<%= student.id %>/edit">Edit student</a></p>
+                </div>
+                <div class="class-roster-summary" aria-label="Student payment summary">
+                    <span><strong><%= student.credits %></strong> current credits</span>
+                    <span><strong><%= payments.length %></strong> payment<%= payments.length === 1 ? "" : "s" %></span>
+                </div>
+            </section>
+
+            <% if (saved) { %>
+                <div class="admin-success">Payment saved. Paid payments update credits automatically.</div>
+            <% } %>
+
+            <% if (errors.length > 0) { %>
+                <div class="admin-alert">
+                    <% errors.forEach((error) => { %>
+                        <p><%= error %></p>
+                    <% }) %>
+                </div>
+            <% } %>
+
+            <form class="admin-form payment-form" action="/admin/students/<%= student.id %>/payments" method="POST">
+                <div class="form-grid">
+                    <div>
+                        <label for="amount">Amount paid</label>
+                        <input type="number" id="amount" name="amount" min="0" step="0.01" placeholder="40.00" required>
+                    </div>
+
+                    <div>
+                        <label for="creditsPurchased">Credits purchased</label>
+                        <input type="number" id="creditsPurchased" name="creditsPurchased" step="1" value="0">
+                    </div>
+
+                    <div>
+                        <label for="paidAt">Payment date</label>
+                        <input type="date" id="paidAt" name="paidAt" value="<%= today %>" required>
+                    </div>
+
+                    <div>
+                        <label for="status">Status</label>
+                        <select id="status" name="status">
+                            <option value="paid">Paid</option>
+                            <option value="pending">Pending</option>
+                            <option value="failed">Failed</option>
+                            <option value="refunded">Refunded</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="paymentMethod">Method</label>
+                        <select id="paymentMethod" name="paymentMethod">
+                            <option value="bank_transfer">Bank transfer</option>
+                            <option value="cash">Cash</option>
+                            <option value="card">Card</option>
+                            <option value="stripe">Stripe</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="currency">Currency</label>
+                        <input type="text" id="currency" name="currency" value="GBP">
+                    </div>
+                </div>
+
+                <input type="hidden" name="provider" value="manual">
+
+                <label for="notes">Notes</label>
+                <textarea id="notes" name="notes" rows="3" placeholder="Optional reference, parent message, or invoice note."></textarea>
+
+                <div class="form-actions">
+                    <input type="submit" value="Record payment">
+                </div>
+            </form>
+
+            <% if (payments.length === 0) { %>
+                <section class="empty-state payment-empty-state">
+                    <h2>No payments yet</h2>
+                    <p>Record the first payment above. Paid payments can add credits immediately.</p>
+                </section>
+            <% } else { %>
+                <section class="student-table-wrap" aria-label="Payment history">
+                    <table class="student-table payment-history-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Credits</th>
+                                <th>Method</th>
+                                <th>Provider</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% payments.forEach((payment) => { %>
+                                <tr>
+                                    <td><%= payment.paidDate || "Not set" %></td>
+                                    <td><strong><%= payment.amount %></strong></td>
+                                    <td><span class="status-pill status-<%= payment.status === "paid" ? "active" : "inactive" %>"><%= payment.status %></span></td>
+                                    <td><%= payment.creditsPurchased %></td>
+                                    <td><%= payment.paymentMethod %></td>
+                                    <td>
+                                        <span><%= payment.provider %></span>
+                                        <% if (payment.providerPaymentId) { %>
+                                            <span><%= payment.providerPaymentId %></span>
+                                        <% } %>
+                                    </td>
+                                    <td><span class="notes-cell"><%= payment.notes || "No notes" %></span></td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </section>
+            <% } %>
+        <% } %>
+    </main>
+</body>
+</html>

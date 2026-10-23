@@ -1,0 +1,13 @@
+export function errorHandler(error, req, res, next) {
+    if (error.type === "entity.too.large" || error.type === "parameters.too.many") {
+        return res.status(413).send("That request was too large.");
+    }
+
+    console.error(error);
+
+    if (req.path.startsWith("/admin")) {
+        return res.status(500).send("There was a problem loading the admin records. Check the server logs and database settings.");
+    }
+
+    res.status(500).send("Something went wrong.");
+}

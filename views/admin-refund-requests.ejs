@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refund Requests | <%= business.shortName %> Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <%- include("partials/admin-nav") %>
+
+    <main class="admin-page">
+        <section class="admin-page-heading">
+            <p class="eyebrow">Parent requests</p>
+            <h1>Refund Requests</h1>
+            <p>Parents can ask for a lesson back when a missed class was charged. Approving gives back 1 credit and marks the absence as "Charge waived".</p>
+        </section>
+
+        <% if (!isSupabaseConfigured) { %>
+            <div class="admin-alert"><p>Database service is not configured yet.</p></div>
+        <% } %>
+
+        <% if (setupError) { %>
+            <div class="admin-alert"><p><%= setupError %></p></div>
+        <% } %>
+
+        <% if (saved) { %>
+            <div class="admin-success"><p><%= saved === "approved" ? "Refund approved and 1 credit given back." : "Refund request declined." %></p></div>
+        <% } %>
+
+        <% if (alreadyReviewed) { %>
+            <div class="admin-alert"><p>That request had already been reviewed.</p></div>
+        <% } %>
+
+        <% if (!setupError) { %>
+            <section class="admin-section-heading">
+                <div>
+                    <h2>Waiting for review</h2>
+                </div>
+                <span><%= pending.length %> waiting</span>
+            </section>
+
+            <% if (pendingTruncated) { %>
+                <div class="admin-alert"><p>Showing the newest <%= queueLimit %> requests waiting for review. Older ones will appear here as you review these.</p></div>
+            <% } %>
+
+            <% if (pending.length === 0) { %>
+                <section class="empty-state">
+                    <h2>No refund requests waiting</h2>
+                    <p>New requests will appear here, and you'll get an email for each one.</p>
+                </section>
+            <% } %>
+
+            <div class="refund-request-list">
+                <% pending.forEach((request) => { %>
+                    <article class="parent-request-card">
+                        <div>
+                            <strong><%= request.studentName %>, missed <%= request.classDateLabel || "class" %></strong>
+                            <span>From <%= request.parentName %><%= request.parentEmail ? " (" + request.parentEmail + ")" : "" %>, <%= request.requestedLabel %></span>
+                        </div>
+                        <span class="status-pill status-pending">Pending</span>
+                        <p class="parent-request-note"><%= request.reason %></p>
+                        <% if (!request.stillCharged) { %>
+                            <p class="parent-request-note">This absence no longer uses a credit, so approving won't change the balance.</p>
+                        <% } %>
+                        <form class="refund-review-form" action="/admin/refund-requests/<%= request.id %>" method="POST">
+                            <label for="adminNotes-<%= request.id %>">Note to parent <span class="field-optional">(optional)</span></label>
+                            <textarea id="adminNotes-<%= request.id %>" name="adminNotes" rows="2" maxlength="<%= inputLimits.refundAdminNotes %>"></textarea>
+                            <div class="form-actions">
+                                <button type="submit" name="action" value="approve">Approve, refund 1 credit</button>
+                                <button type="submit" name="action" value="decline" class="secondary-button">Decline</button>
+                            </div>
+                        </form>
+                    </article>
+                <% }) %>
+            </div>
+
+            <% if (reviewed.length > 0) { %>
+                <section class="admin-section-heading">
+                    <div>
+                        <h2>Recently reviewed</h2>
+                    </div>
+                </section>
+                <div class="refund-request-list">
+                    <% reviewed.forEach((request) => { %>
+                        <article class="parent-request-card<%= request.status === "declined" ? " is-rejected" : "" %>">
+                            <div>
+                                <strong><%= request.studentName %>, missed <%= request.classDateLabel || "class" %></strong>
+                                <span>From <%= request.parentName %>, reviewed <%= request.reviewedLabel %></span>
+                            </div>
+                            <span class="status-pill status-<%= request.status === "approved" ? "active" : "inactive" %>"><%= request.status === "approved" ? "Refunded" : "Declined" %></span>
+                            <p class="parent-request-note"><%= request.reason %></p>
+                            <% if (request.adminNotes) { %>
+                                <p class="parent-request-note">Your note: <%= request.adminNotes %></p>
+                            <% } %>
+                        </article>
+                    <% }) %>
+                </div>
+            <% } %>
+        <% } %>
+    </main>
+</body>
+</html>

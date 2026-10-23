@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<%- include("../partials/site-head") %>
+</head>
+<body class="site-page">
+<%- include("../partials/site-header") %>
+
+    <main class="site-main home">
+        <section class="site-section home-hero" aria-labelledby="page-title">
+            <div>
+                <h1 id="page-title"><%= business.tagline %></h1>
+                <p class="site-lede"><%= business.description %></p>
+                <p class="site-actions">
+                    <a class="button-link" href="/book-now">Book a class</a>
+                    <a class="secondary-link" href="/lessons">See what lessons cover</a>
+                </p>
+            </div>
+        </section>
+
+        <section class="site-section" aria-labelledby="ways-title">
+            <h2 id="ways-title">Ways to learn</h2>
+            <div class="home-ways">
+                <% groupClasses.forEach((groupClass) => { %>
+                    <div class="home-way">
+                        <h3><%= groupClass.name %></h3>
+                        <p>Every <%= groupClass.dayLabel %><%= groupClass.time ? `, ${groupClass.time}` : "" %>. <%= groupClass.description %></p>
+                        <% if (lessonPack) { %><p class="site-price"><%= lessonPack.priceLabel %> <span>for <%= lessonPack.credits %> lessons</span></p><% } %>
+                    </div>
+                <% }) %>
+                <% if (oneToOne.enabled) { %>
+                    <div class="home-way">
+                        <h3><%= oneToOne.label %></h3>
+                        <p><%= oneToOne.description %></p>
+                        <% oneToOne.lessons.forEach((lesson) => { %>
+                            <p class="site-price"><%= lesson.priceLabel %> <span><%= lesson.label %></span></p>
+                        <% }) %>
+                    </div>
+                <% } %>
+            </div>
+        </section>
+
+        <section class="site-section site-closing" aria-labelledby="closing-title">
+            <h2 id="closing-title">Ready to start?</h2>
+            <p>Send a booking request and we'll reply within <%= business.replyWithinHours %> hours.</p>
+            <p class="site-actions"><a class="button-link" href="/book-now">Book a class</a></p>
+        </section>
+    </main>
+
+<%- include("../partials/site-footer") %>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Links | <%= business.shortName %> Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <%- include("partials/admin-nav") %>
+
+    <main class="admin-page">
+        <section class="admin-page-heading">
+            <p class="eyebrow">Parent access</p>
+            <h1>Parent Link Requests</h1>
+            <p>Approve parent accounts before they can see a student profile, attendance, credits, or payment history.</p>
+        </section>
+
+        <% if (!isSupabaseConfigured) { %>
+            <div class="admin-alert">
+                <p>Database service is not configured yet.</p>
+            </div>
+        <% } else if (!isParentAuthConfigured) { %>
+            <div class="admin-alert">
+                <p>Parent accounts are not fully configured yet.</p>
+            </div>
+        <% } %>
+
+        <% if (setupError) { %>
+            <div class="admin-alert">
+                <p><%= setupError %></p>
+            </div>
+        <% } %>
+
+        <% if (saved) { %>
+            <div class="admin-success">
+                <p>Parent link request updated.</p>
+            </div>
+        <% } %>
+
+        <% if (unlinked === "1") { %>
+            <div class="admin-success">
+                <p>Parent unlinked. They can no longer see that child in the parent portal or get emails about them.</p>
+            </div>
+        <% } else if (unlinked === "email-kept") { %>
+            <div class="admin-alert">
+                <p>Parent unlinked, so they can no longer see that child in the parent portal. Their email is still the parent email on the child's student record, so they'll keep getting class emails until you clear it in Student records &gt; Edit.</p>
+            </div>
+        <% } else if (unlinked === "0") { %>
+            <div class="admin-alert">
+                <p>That parent link was already removed.</p>
+            </div>
+        <% } %>
+
+        <% if (errors.length > 0) { %>
+            <div class="admin-alert">
+                <% errors.forEach((error) => { %>
+                    <p><%= error %></p>
+                <% }) %>
+            </div>
+        <% } %>
+
+        <% if (!setupError && linkRequests.links.length === 0) { %>
+            <section class="empty-state">
+                <h2>No parent link requests yet</h2>
+                <p>Requests will appear here after a parent creates an account and asks to link a child.</p>
+            </section>
+        <% } else if (!setupError) { %>
+            <% const pendingLinks = linkRequests.links.filter((link) => link.status === "pending"); %>
+            <% const previousLinks = linkRequests.links.filter((link) => link.status !== "pending"); %>
+
+            <section class="admin-section-heading">
+                <div>
+                    <h2>Pending Requests</h2>
+                    <p>Review these requests and link each parent to the correct student record.</p>
+                </div>
+                <span><%= pendingLinks.length %> waiting</span>
+            </section>
+
+            <% if (linkRequests.pendingTruncated) { %>
+                <div class="admin-alert">
+                    <p>Showing the newest <%= linkRequests.queueLimit %> pending requests. Older ones will appear here as you review these.</p>
+                </div>
+            <% } %>
+
+            <% if (pendingLinks.length === 0) { %>
+                <section class="empty-state compact-empty-state">
+                    <h2>No pending requests</h2>
+                    <p>Approved and rejected requests are shown below.</p>
+                </section>
+            <% } else { %>
+            <section class="student-table-wrap" aria-label="Parent link requests">
+                <table class="student-table parent-link-table">
+                    <thead>
+                        <tr>
+                            <th>Parent</th>
+                            <th>Requested child</th>
+                            <th>Status</th>
+                            <th>Student record</th>
+                            <th>Review</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% pendingLinks.forEach((link) => { %>
+                            <tr>
+                                <td>
+                                    <strong><%= link.parent ? link.parent.fullName : "Parent profile missing" %></strong>
+                                    <span><%= link.parent ? link.parent.email : link.parentId %></span>
+                                    <% if (link.parent && link.parent.phone) { %>
+                                        <span><%= link.parent.phone %></span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <strong><%= link.requestedChildName %></strong>
+                                    <span><%= link.relationship || "Relationship not set" %></span>
+                                    <% if (link.notes) { %>
+                                        <span class="notes-cell"><%= link.notes %></span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <span class="status-pill status-<%= link.status === "approved" ? "active" : "inactive" %>"><%= link.status %></span>
+                                    <% if (link.reviewedNotes) { %>
+                                        <span class="notes-cell"><%= link.reviewedNotes %></span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <span>Not linked yet</span>
+                                    <% if (link.suggestedStudent) { %>
+                                        <span class="field-hint">Name matches <%= link.suggestedStudent.name %>. Check this parent is really theirs before approving.</span>
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <form class="inline-review-form" action="/admin/parent-links/<%= link.id %>" method="POST">
+                                        <label for="studentId-<%= link.id %>">Student</label>
+                                        <select id="studentId-<%= link.id %>" name="studentId">
+                                            <option value="">Choose student</option>
+                                            <% linkRequests.students.forEach((student) => { %>
+                                                <option value="<%= student.id %>"><%= student.name %></option>
+                                            <% }) %>
+                                        </select>
+
+                                        <label for="reviewedNotes-<%= link.id %>">Admin note</label>
+                                        <textarea id="reviewedNotes-<%= link.id %>" name="reviewedNotes" rows="2"><%= link.reviewedNotes || "" %></textarea>
+
+                                        <div class="inline-button-row">
+                                            <button type="submit" name="action" value="approve">Approve</button>
+                                            <button type="submit" name="action" value="reject">Reject</button>
+                                        </div>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </section>
+            <% } %>
+
+            <section class="admin-section-heading previous-request-heading">
+                <div>
+                    <h2>Previous Requests</h2>
+                    <p>Reviewed requests are kept here as a read-only record.</p>
+                </div>
+                <span><%= previousLinks.length %> reviewed</span>
+            </section>
+
+            <% if (linkRequests.historyTruncated) { %>
+                <div class="admin-alert"><p>Showing the newest <%= linkRequests.historyLimit %> approved links and the newest <%= linkRequests.historyLimit %> rejected requests.</p></div>
+            <% } %>
+
+            <% if (previousLinks.length === 0) { %>
+                <section class="empty-state compact-empty-state">
+                    <h2>No previous requests</h2>
+                    <p>Reviewed parent links will appear here.</p>
+                </section>
+            <% } else { %>
+                <section class="student-table-wrap" aria-label="Previous parent link requests">
+                    <table class="student-table parent-link-history-table">
+                        <thead>
+                            <tr>
+                                <th>Parent</th>
+                                <th>Requested child</th>
+                                <th>Status</th>
+                                <th>Linked student</th>
+                                <th>Admin note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% previousLinks.forEach((link) => { %>
+                                <tr>
+                                    <td>
+                                        <strong><%= link.parent ? link.parent.fullName : "Parent profile missing" %></strong>
+                                        <span><%= link.parent ? link.parent.email : link.parentId %></span>
+                                        <% if (link.parent && link.parent.phone) { %>
+                                            <span><%= link.parent.phone %></span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <strong><%= link.requestedChildName %></strong>
+                                        <span><%= link.relationship || "Relationship not set" %></span>
+                                        <% if (link.notes) { %>
+                                            <span class="notes-cell"><%= link.notes %></span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <span class="status-pill status-<%= link.status === "approved" ? "active" : "inactive" %>"><%= link.status %></span>
+                                    </td>
+                                    <td>
+                                        <span><%= link.student ? link.student.name : "Not linked" %></span>
+                                        <% if (link.status === "approved") { %>
+                                            <details class="unlink-panel">
+                                                <summary>Unlink</summary>
+                                                <form action="/admin/parent-links/<%= link.id %>/unlink" method="POST">
+                                                    <p>Remove <%= link.parent ? link.parent.fullName : "this parent" %>'s access to <%= link.student ? link.student.name : "this child" %>? They'll need to send a new request to get it back.</p>
+                                                    <button type="submit">Unlink parent</button>
+                                                </form>
+                                            </details>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <span class="notes-cell"><%= link.reviewedNotes || "No note" %></span>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </section>
+            <% } %>
+        <% } %>
+    </main>
+</body>
+</html>

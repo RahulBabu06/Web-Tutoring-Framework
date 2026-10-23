@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin | <%= business.name %></title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <%- include("partials/admin-nav") %>
+
+    <main class="admin-page">
+        <section class="admin-page-heading admin-page-heading-row">
+            <div>
+                <h1>Admin</h1>
+                <p>What needs doing, and quick links to the things you do most.</p>
+            </div>
+            <div class="admin-quick-actions">
+                <a class="button-link" href="/admin/classes">Take register</a>
+                <a class="button-link button-link-outline" href="/admin/students/new">Add student</a>
+            </div>
+        </section>
+
+        <% if (!isSupabaseConfigured) { %>
+            <div class="admin-alert"><p>Database service is not configured yet. Finish the server setup before managing records.</p></div>
+        <% } else if (setupError) { %>
+            <div class="admin-alert"><p><%= setupError %></p></div>
+        <% } else { %>
+            <div class="admin-home-grid">
+                <% classSummaries.forEach(({ groupClass, rosterCount, nextClass }) => { %>
+                <section class="admin-home-card">
+                    <p class="eyebrow">Next <%= groupClass.name %></p>
+                    <h2><%= nextClass.label %></h2>
+                    <p><%= groupClass.time ? `${groupClass.time} · ` : "" %><%= rosterCount %> student<%= rosterCount === 1 ? "" : "s" %> on the register</p>
+                    <% if (nextClass.cancellation) { %>
+                        <p><span class="status-pill status-inactive">Cancelled</span><% if (nextClass.cancellation.reason) { %> <%= nextClass.cancellation.reason %><% } %></p>
+                    <% } else if (nextClass.registerTaken) { %>
+                        <p><span class="status-pill status-active">Register taken</span></p>
+                    <% } else if (nextClass.registerStarted && nextClass.unmarkedCount > 0) { %>
+                        <p><span class="status-pill status-pending">Register partly taken</span> <%= nextClass.unmarkedCount %> student<%= nextClass.unmarkedCount === 1 ? "" : "s" %> not marked yet</p>
+                    <% } %>
+                    <p class="admin-home-card-links">
+                        <a href="/admin/classes/<%= encodeURIComponent(groupClass.id) %>?date=<%= nextClass.date %>"><%= nextClass.cancellation ? "Open class page (undo cancellation)" : nextClass.registerTaken ? "View register" : "Open register or cancel class" %></a>
+                    </p>
+                </section>
+                <% }) %>
+
+                <section class="admin-home-card">
+                    <p class="eyebrow">Students</p>
+                    <h2><%= activeCount %> active</h2>
+                    <p><%= inactiveCount %> inactive</p>
+                    <p class="admin-home-card-links">
+                        <a href="/admin/students">Active students</a>
+                        <a href="/admin/students?view=inactive">Inactive students</a>
+                    </p>
+                </section>
+            </div>
+
+            <section class="admin-section-heading">
+                <div>
+                    <h2>To do</h2>
+                </div>
+            </section>
+
+            <% if (todoCount === 0) { %>
+                <section class="empty-state">
+                    <h2>All caught up</h2>
+                    <p>No requests waiting and every active student has a class, a parent email and more than <%= lowCreditThreshold %> credits.</p>
+                </section>
+            <% } else { %>
+                <ul class="admin-todo-list">
+                    <% classesNeedingRegister.forEach(({ groupClass, lastClassNeedsRegister }) => { %>
+                        <li>
+                            <div>
+                                <% if (lastClassNeedsRegister.registerStarted) { %>
+                                    <strong><%= groupClass.name %> register incomplete for <%= lastClassNeedsRegister.label %></strong>
+                                    <p><%= lastClassNeedsRegister.unmarkedCount %> of <%= lastClassNeedsRegister.rosterCount %> student<%= lastClassNeedsRegister.rosterCount === 1 ? "" : "s" %> not marked yet.</p>
+                                <% } else { %>
+                                    <strong><%= groupClass.name %> register not taken for <%= lastClassNeedsRegister.label %></strong>
+                                    <p>Nobody has been marked present or absent for that class yet.</p>
+                                <% } %>
+                            </div>
+                            <a class="table-action" href="/admin/classes/<%= encodeURIComponent(groupClass.id) %>?date=<%= lastClassNeedsRegister.date %>">Take register</a>
+                        </li>
+                    <% }) %>
+                    <% if (pendingParentLinks > 0) { %>
+                        <li>
+                            <div>
+                                <strong><%= pendingParentLinks %> parent link request<%= pendingParentLinks === 1 ? "" : "s" %> waiting</strong>
+                                <p>Parents can't see their child in the portal until you approve.</p>
+                            </div>
+                            <a class="table-action" href="/admin/parent-links">Review</a>
+                        </li>
+                    <% } %>
+                    <% if (pendingRefunds > 0) { %>
+                        <li>
+                            <div>
+                                <strong><%= pendingRefunds %> refund request<%= pendingRefunds === 1 ? "" : "s" %> waiting</strong>
+                                <p>Parents asked for a charged absence to be refunded.</p>
+                            </div>
+                            <a class="table-action" href="/admin/refund-requests">Review</a>
+                        </li>
+                    <% } %>
+                    <% if (lowCreditStudents.length > 0) { %>
+                        <li>
+                            <div>
+                                <strong><%= lowCreditStudents.length %> active student<%= lowCreditStudents.length === 1 ? " has" : "s have" %> <%= lowCreditThreshold %> credits or fewer</strong>
+                                <p class="admin-todo-names">
+                                    <% lowCreditStudents.forEach((student) => { %>
+                                        <a href="/admin/students/<%= student.id %>/payments"><%= student.name %> (<%= student.credits %>)</a>
+                                    <% }) %>
+                                </p>
+                            </div>
+                        </li>
+                    <% } %>
+                    <% if (noClassStudents.length > 0) { %>
+                        <li>
+                            <div>
+                                <strong><%= noClassStudents.length %> active student<%= noClassStudents.length === 1 ? " isn't" : "s aren't" %> in a class</strong>
+                                <p>They won't appear on any group class register.</p>
+                            </div>
+                            <a class="table-action" href="/admin/students?class=none">Assign a class</a>
+                        </li>
+                    <% } %>
+                    <% if (noEmailStudents.length > 0) { %>
+                        <li>
+                            <div>
+                                <strong><%= noEmailStudents.length %> active student<%= noEmailStudents.length === 1 ? " has" : "s have" %> no parent email on their record</strong>
+                                <p>Only parents with a portal account get emails about these students.</p>
+                                <p class="admin-todo-names">
+                                    <% noEmailStudents.forEach((student) => { %>
+                                        <a href="/admin/students/<%= student.id %>/edit"><%= student.name %></a>
+                                    <% }) %>
+                                </p>
+                            </div>
+                        </li>
+                    <% } %>
+                </ul>
+            <% } %>
+        <% } %>
+    </main>
+</body>
+</html>

@@ -1,0 +1,54 @@
+{
+    "name": "Your Tutoring Co",
+    "shortName": "Your Tutoring",
+    "tagline": "Friendly, expert tutoring for every learner.",
+    "description": "Small group classes and 1-to-1 tutoring, for complete beginners through to advanced students.",
+    "subject": "tutoring",
+    "tutorName": "Your Name",
+    "siteUrl": "http://localhost:4000",
+    "contact": {
+        "email": "hello@example.com",
+        "phone": "",
+        "address": "",
+        "socialLinks": []
+    },
+    "locale": "en-GB",
+    "currency": "GBP",
+    "timeZone": "Europe/London",
+    "replyWithinHours": 48,
+    "levels": ["New to the subject", "Beginner", "Intermediate", "Advanced"],
+    "groupClasses": [
+        {
+            "id": "wednesday-group",
+            "name": "Wednesday group class",
+            "day": "wednesday",
+            "time": "6:45 PM - 7:45 PM",
+            "description": "Learn alongside other students in a small weekly group."
+        }
+    ],
+    "oneToOne": {
+        "enabled": true,
+        "label": "1-to-1 lessons",
+        "description": "Lessons built around each student's level and goals.",
+        "timeSlots": ["Saturday morning", "Sunday morning", "Tuesday evening", "Thursday evening", "Friday evening"],
+        "lessons": [
+            { "minutes": 60, "label": "1-1 lesson (1 hour)", "priceMinorUnits": 4500 },
+            { "minutes": 45, "label": "1-1 lesson (45 minutes)", "priceMinorUnits": 4000 }
+        ]
+    },
+    "lessonPack": {
+        "credits": 10,
+        "priceMinorUnits": 18000
+    },
+    "attendance": {
+        "initialFreeSkips": 2,
+        "freeSkipsPerPaidBlock": 2,
+        "paidCreditsPerBlock": 10,
+        "maxFreeSkipsHeld": 2,
+        "lowCreditThreshold": 2
+    },
+    "reminders": {
+        "dayBeforeFromHour": 18,
+        "sameDayUntilHour": 12
+    }
+}

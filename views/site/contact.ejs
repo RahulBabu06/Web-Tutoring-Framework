@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<%- include("../partials/site-head") %>
+</head>
+<body class="site-page">
+<%- include("../partials/site-header") %>
+
+    <main class="site-main">
+        <section class="site-section" aria-labelledby="page-title">
+            <h1 id="page-title">Contact</h1>
+            <p class="site-lede">Questions about lessons, prices or availability? Get in touch and we'll reply within <%= business.replyWithinHours %> hours.</p>
+            <ul class="site-contact-list">
+                <% if (business.contact.email) { %><li>Email: <a href="mailto:<%= business.contact.email %>"><%= business.contact.email %></a></li><% } %>
+                <% if (business.contact.phone) { %><li>Phone: <a href="tel:<%= business.contact.phone.replace(/\s+/g, "") %>"><%= business.contact.phone %></a></li><% } %>
+                <% if (business.contact.address) { %><li>Address: <%= business.contact.address %></li><% } %>
+                <% business.contact.socialLinks.forEach((link) => { %><li><a href="<%= link.url %>"><%= link.label %></a></li><% }) %>
+            </ul>
+            <p class="site-actions"><a class="button-link" href="/book-now">Book a class</a></p>
+        </section>
+    </main>
+
+<%- include("../partials/site-footer") %>
+</body>
+</html>

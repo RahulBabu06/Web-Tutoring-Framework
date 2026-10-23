@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<%- include("../partials/site-head") %>
+</head>
+<body class="site-page">
+<%- include("../partials/site-header") %>
+
+    <main class="site-main">
+        <section class="site-section" aria-labelledby="page-title">
+            <h1 id="page-title">Lessons</h1>
+            <p class="site-lede"><%= business.description %></p>
+        </section>
+
+        <% groupClasses.forEach((groupClass) => { %>
+            <section class="site-section" aria-labelledby="class-<%= groupClass.id %>">
+                <h2 id="class-<%= groupClass.id %>"><%= groupClass.name %></h2>
+                <p>Every <%= groupClass.dayLabel %><%= groupClass.time ? `, ${groupClass.time}` : "" %>.</p>
+                <% if (groupClass.description) { %><p><%= groupClass.description %></p><% } %>
+                <% if (lessonPack) { %><p class="site-price"><%= lessonPack.priceLabel %> <span>for <%= lessonPack.credits %> lessons</span></p><% } %>
+            </section>
+        <% }) %>
+
+        <% if (oneToOne.enabled) { %>
+            <section class="site-section" aria-labelledby="one-to-one-title">
+                <h2 id="one-to-one-title"><%= oneToOne.label %></h2>
+                <% if (oneToOne.description) { %><p><%= oneToOne.description %></p><% } %>
+                <% if (oneToOne.timeSlots.length > 0) { %><p>Usual times: <%= oneToOne.timeSlots.join(", ") %>.</p><% } %>
+                <% oneToOne.lessons.forEach((lesson) => { %>
+                    <p class="site-price"><%= lesson.priceLabel %> <span><%= lesson.label %></span></p>
+                <% }) %>
+            </section>
+        <% } %>
+
+        <section class="site-section" aria-labelledby="missed-title">
+            <h2 id="missed-title">Missed lessons</h2>
+            <p>Every student starts with <%= business.attendance.initialFreeSkips %> free skip<%= business.attendance.initialFreeSkips === 1 ? "" : "s" %>, so missing a group class doesn't use a lesson credit. You can hold up to <%= business.attendance.maxFreeSkipsHeld %> at a time, topped up every time you buy <%= business.attendance.paidCreditsPerBlock %> lessons.</p>
+            <p class="site-actions"><a class="button-link" href="/book-now">Book a class</a></p>
+        </section>
+    </main>
+
+<%- include("../partials/site-footer") %>
+</body>
+</html>

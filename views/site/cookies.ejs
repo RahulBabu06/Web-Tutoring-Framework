@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<%- include("../partials/site-head") %>
+</head>
+<body class="site-page">
+<%- include("../partials/site-header") %>
+
+    <main class="site-main">
+        <section class="site-section legal-page" aria-labelledby="page-title">
+            <h1 id="page-title">Cookie policy</h1>
+
+            <h2>What we use</h2>
+            <p>This website only uses cookies that are strictly necessary for it to work. We don't use analytics, advertising or tracking cookies, so we don't ask for consent to them.</p>
+
+            <div class="legal-table-wrap">
+                <table class="legal-table">
+                    <thead>
+                        <tr><th>Name</th><th>Purpose</th><th>How long it lasts</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code><%= cookieNames.parentAccess %></code></td><td>Keeps a parent signed in to the parent portal.</td><td>About 1 hour</td></tr>
+                        <tr><td><code><%= cookieNames.parentRefresh %></code></td><td>Renews the parent portal sign-in so parents don't have to log in every hour.</td><td>30 days, or until you log out</td></tr>
+                        <tr><td><code><%= cookieNames.admin %></code></td><td>Keeps the <%= business.name %> administrator signed in to the admin pages.</td><td>8 hours, or until logging out</td></tr>
+                        <tr><td><code>cookie-notice</code> (browser storage)</td><td>Remembers that you've closed the cookie notice.</td><td>Until you clear your browser data</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2>Paying online</h2>
+            <p>When you buy lessons, you pay on Stripe's secure checkout page (checkout.stripe.com). Stripe sets its own cookies there to process the payment and prevent fraud. See <a href="https://stripe.com/cookies-policy/legal">Stripe's cookie policy</a>.</p>
+
+            <h2>Questions</h2>
+            <p>Contact us<% if (business.contact.email) { %> at <a href="mailto:<%= business.contact.email %>"><%= business.contact.email %></a><% } %> if you have any questions about this policy.</p>
+        </section>
+    </main>
+
+<%- include("../partials/site-footer") %>
+</body>
+</html>

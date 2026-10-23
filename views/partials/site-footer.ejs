@@ -1,0 +1,23 @@
+    <footer class="site-footer">
+        <div class="site-footer-inner">
+            <div>
+                <p class="site-footer-name"><%= business.name %></p>
+                <p><%= business.tagline %></p>
+            </div>
+            <nav aria-label="Footer">
+                <ul>
+                    <li><a href="/lessons">Lessons</a></li>
+                    <li><a href="/book-now">Book a class</a></li>
+                    <li><a href="/parents/login">Parent portal</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                    <li><a href="/cookies">Cookie policy</a></li>
+                </ul>
+            </nav>
+            <ul class="site-footer-contact">
+                <% if (business.contact.email) { %><li><a href="mailto:<%= business.contact.email %>"><%= business.contact.email %></a></li><% } %>
+                <% if (business.contact.phone) { %><li><a href="tel:<%= business.contact.phone.replace(/\s+/g, "") %>"><%= business.contact.phone %></a></li><% } %>
+                <% business.contact.socialLinks.forEach((link) => { %><li><a href="<%= link.url %>"><%= link.label %></a></li><% }) %>
+            </ul>
+        </div>
+        <p class="site-footer-legal">&copy; <%= new Date().getFullYear() %> <%= business.name %>. All rights reserved.</p>
+    </footer>

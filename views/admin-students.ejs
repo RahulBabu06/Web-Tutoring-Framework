@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Students | <%= business.shortName %> Admin</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <%- include("partials/admin-nav") %>
+
+    <main class="admin-page">
+        <section class="admin-page-heading admin-page-heading-row">
+            <div>
+                <h1>Student Records</h1>
+                <p>Only the admin account can create or edit these records.</p>
+            </div>
+            <% if (isSupabaseConfigured && !setupError) { %>
+                <a class="button-link" href="/admin/students/new">Add student</a>
+            <% } %>
+        </section>
+
+        <% if (saved) { %>
+            <div class="admin-success">Student records saved.</div>
+        <% } %>
+
+        <% if (!isSupabaseConfigured) { %>
+            <div class="admin-alert">
+                <p>Database service is not configured yet. Finish the server setup before managing records.</p>
+            </div>
+        <% } else if (setupError) { %>
+            <div class="admin-alert">
+                <p><%= setupError %></p>
+            </div>
+        <% } else if (totalStudents === 0) { %>
+            <section class="empty-state">
+                <h2>No students yet</h2>
+                <p>Add your first student record to start building the admin database.</p>
+                <a class="button-link" href="/admin/students/new">Add student</a>
+            </section>
+        <% } else { %>
+            <% if (bulkMessage) { %>
+                <div class="admin-success"><p><%= bulkMessage %></p></div>
+            <% } %>
+            <% if (bulkError) { %>
+                <div class="admin-alert"><p>Tick at least one student and choose what to do with them.</p></div>
+            <% } %>
+
+            <nav class="student-view-tabs" aria-label="Student status">
+                <a href="<%= viewUrl("active") %>" <%- filters.view === "active" ? 'aria-current="page"' : "" %>>Active (<%= activeCount %>)</a>
+                <a href="<%= viewUrl("inactive") %>" <%- filters.view === "inactive" ? 'aria-current="page"' : "" %>>Inactive (<%= inactiveCount %>)</a>
+            </nav>
+
+            <form class="student-search" method="get" action="/admin/students" role="search">
+                <% if (filters.view === "inactive") { %>
+                    <input type="hidden" name="view" value="inactive">
+                <% } %>
+                <div class="student-search-field">
+                    <label for="studentSearch">Search</label>
+                    <input type="search" id="studentSearch" name="q" value="<%= filters.q %>" placeholder="Student, parent, email or phone" maxlength="<%= inputLimits.studentSearch %>" autocomplete="off">
+                </div>
+                <div class="student-search-field">
+                    <label for="studentClassFilter">Class</label>
+                    <select id="studentClassFilter" name="class">
+                        <option value="">All classes</option>
+                        <% classOptions.forEach((option) => { %>
+                            <option value="<%= option %>" <%= filters.classFilter === option ? "selected" : "" %>><%= option %></option>
+                        <% }) %>
+                        <option value="<%= noClassFilter %>" <%= filters.classFilter === noClassFilter ? "selected" : "" %>>No class</option>
+                    </select>
+                </div>
+                <button type="submit">Search</button>
+                <% if (filters.q || filters.classFilter) { %>
+                    <a class="table-action" href="<%= clearUrl %>">Clear</a>
+                <% } %>
+            </form>
+
+            <% if (students.length === 0) { %>
+                <section class="empty-state">
+                    <h2>No matching students</h2>
+                    <p>There are no <%= filters.view %> students in this class.</p>
+                </section>
+            <% } else { %>
+                <form id="studentBulkForm" class="student-bulk-form" method="post" action="/admin/students/bulk">
+                    <input type="hidden" name="view" value="<%= filters.view %>">
+                    <input type="hidden" name="q" value="<%= filters.q %>">
+                    <input type="hidden" name="class" value="<%= filters.classFilter %>">
+
+                    <div class="student-bulk-bar">
+                        <label for="bulkAction">With ticked students:</label>
+                        <select id="bulkAction" name="bulkAction" required>
+                            <option value="" disabled selected>Choose an action</option>
+                            <optgroup label="Move to class">
+                                <% classOptions.forEach((option) => { %>
+                                    <option value="class:<%= option %>"><%= option %></option>
+                                <% }) %>
+                                <option value="class:<%= noClassFilter %>">No class</option>
+                            </optgroup>
+                            <optgroup label="Status">
+                                <% if (filters.view === "active") { %>
+                                    <option value="status:inactive">Mark inactive</option>
+                                <% } else { %>
+                                    <option value="status:active">Mark active</option>
+                                <% } %>
+                            </optgroup>
+                        </select>
+                        <button type="submit" id="bulkApply">Apply</button>
+                        <span class="student-bulk-count" id="bulkCount" aria-live="polite"></span>
+                    </div>
+                    <p class="student-bulk-note">Only active students whose preferred class is a group class appear on that class register.</p>
+
+                    <section class="student-table-wrap" aria-label="Student records">
+                        <table class="student-table">
+                            <thead>
+                                <tr>
+                                    <th class="student-select-cell">
+                                        <input type="checkbox" id="selectAllStudents" aria-label="Tick all students shown">
+                                    </th>
+                                    <th>Student</th>
+                                    <th>Parent</th>
+                                    <th>Contact</th>
+                                    <th>Preferred class</th>
+                                    <th>Credits</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% students.forEach((student) => { %>
+                                    <tr data-search="<%= student.searchText %>" <%= student.matchesSearch ? "" : "hidden" %>>
+                                        <td class="student-select-cell">
+                                            <input type="checkbox" name="studentIds" value="<%= student.id %>" aria-label="Tick <%= student.name %>">
+                                        </td>
+                                        <td>
+                                            <strong><%= student.name %></strong>
+                                            <% if (student.displayNotes) { %>
+                                                <span><%= student.displayNotes %></span>
+                                            <% } %>
+                                        </td>
+                                        <td><%= student.parentName || "Not set" %></td>
+                                        <td>
+                                            <span><%= student.parentEmail || "No email" %></span>
+                                            <span><%= student.phone || "No phone" %></span>
+                                        </td>
+                                        <td><%= student.preferredClass || "Not set" %></td>
+                                        <td><span class="credit-count credit-count-small"><%= student.credits %></span></td>
+                                        <td><span class="status-pill status-<%= student.status || "active" %>"><%= student.status || "active" %></span></td>
+                                        <td class="table-actions">
+                                            <a class="table-action" href="/admin/students/<%= student.id %>/attendance">History</a>
+                                            <a class="table-action" href="/admin/students/<%= student.id %>/payments">Payments</a>
+                                            <a class="table-action" href="/admin/students/<%= student.id %>/edit">Edit</a>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                        <p class="student-no-matches" id="studentNoMatches" <%= students.some((student) => student.matchesSearch) ? "hidden" : "" %>>No students match this search.</p>
+                    </section>
+                </form>
+            <% } %>
+        <% } %>
+    </main>
+    <script src="/admin/student-records.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<%_ const pageCopy = {
+        login: { title: "Parent Login", intro: "Log in to view your linked children, credits, attendance, and payments.", action: "/parents/login", submit: "Log in" },
+        register: { title: "Create Parent Account", intro: "Create an account, then request access to your child's " + business.name + " record.", action: "/parents/register", submit: "Create account" },
+        forgot: { title: "Reset Your Password", intro: "Enter the email you signed up with and we'll send you a link to choose a new password.", action: "/parents/forgot-password", submit: "Send reset link" },
+        reset: { title: "Choose a New Password", intro: "Enter a new password for your parent account.", action: "/parents/reset-password", submit: "Update password" }
+    }[mode]; -%>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= pageCopy.title %> | <%= business.name %></title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/cookie-notice.js" defer></script>
+</head>
+<body>
+    <main class="admin-auth-page">
+        <section class="admin-auth-card">
+            <a href="/" aria-label="<%= business.name %> home">
+                <span class="brand-wordmark admin-auth-logo"><%= business.shortName %></span>
+            </a>
+            <p class="eyebrow">Parent portal</p>
+            <% const isNewPassword = mode === "register" || mode === "reset"; %>
+            <h1><%= pageCopy.title %></h1>
+            <p><%= pageCopy.intro %></p>
+
+            <% if (!isParentAuthConfigured) { %>
+                <div class="admin-alert">
+                    <p>Parent accounts are not available yet.</p>
+                </div>
+            <% } %>
+
+            <% if (locals.passwordReset) { %>
+                <div class="admin-success">
+                    <p>Your password has been updated. Log in with your new password.</p>
+                </div>
+            <% } %>
+            <% if (locals.emailConfirmed) { %>
+                <div class="admin-success">
+                    <p>Email confirmed. You can now log in.</p>
+                </div>
+            <% } %>
+
+            <% if (locals.resetSent) { %>
+                <div class="admin-success">
+                    <p>If an account exists for <strong><%= values.email %></strong>, we've sent a reset link. Check your inbox and spam folder.</p>
+                </div>
+            <% } %>
+
+            <% if (mode === "reset") { %>
+                <div class="admin-alert" data-reset-link-error hidden>
+                    <p>This reset link is invalid or has expired. <a href="/parents/forgot-password">Request a new one</a>.</p>
+                </div>
+            <% } %>
+
+            <% if (registered) { %>
+                <div class="admin-success">
+                    <p>Please confirm your email before logging in.</p>
+                </div>
+            <% } %>
+
+            <% if (errors.length > 0) { %>
+                <div class="admin-alert">
+                    <% errors.forEach((error) => { %>
+                        <p><%= error %></p>
+                    <% }) %>
+                </div>
+            <% } %>
+
+            <% if (!locals.resetSent) { %>
+            <form class="admin-form" action="<%= pageCopy.action %>" method="POST">
+                <% if (mode === "register") { %>
+                    <label for="fullName">Your name</label>
+                    <input type="text" id="fullName" name="fullName" value="<%= values.fullName || "" %>" autocomplete="name" required>
+                <% } %>
+
+                <% if (mode !== "reset") { %>
+                    <label for="email">Email address</label>
+                    <input type="email" id="email" name="email" value="<%= values.email || "" %>" autocomplete="email" autocapitalize="none" spellcheck="false" required>
+                <% } %>
+
+                <% if (mode === "register") { %>
+                    <label for="phone">Phone <span class="field-optional">(optional)</span></label>
+                    <input type="tel" id="phone" name="phone" value="<%= values.phone || "" %>" autocomplete="tel">
+                <% } %>
+
+                <% if (mode === "reset") { %>
+                    <input type="hidden" id="accessToken" name="accessToken" value="<%= values.accessToken || "" %>">
+                <% } %>
+
+                <% if (mode !== "forgot") { %>
+                    <label for="password"><%= mode === "reset" ? "New password" : "Password" %></label>
+                    <input type="password" id="password" name="password" minlength="8" autocomplete="<%= isNewPassword ? "new-password" : "current-password" %>" data-password-field required>
+                    <% if (isNewPassword) { %>
+                        <p class="field-hint">At least 8 characters.</p>
+                    <% } else { %>
+                        <p class="field-hint"><a class="secondary-link" href="/parents/forgot-password">Forgot your password?</a></p>
+                    <% } %>
+                <% } %>
+
+                <% if (isNewPassword) { %>
+                    <label for="confirmPassword">Confirm password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" minlength="8" autocomplete="new-password" data-password-field required>
+                <% } %>
+
+                <% if (mode !== "forgot") { %>
+                    <label class="show-password">
+                        <input type="checkbox" data-show-password>
+                        Show password
+                    </label>
+                <% } %>
+
+                <div class="form-actions">
+                    <input type="submit" value="<%= pageCopy.submit %>" <%= isParentAuthConfigured ? "" : "disabled" %>>
+                </div>
+            </form>
+            <% } %>
+
+            <% if (mode === "forgot" || mode === "reset") { %>
+                <p class="auth-switch">Remembered it? <a class="secondary-link" href="/parents/login">Back to log in</a></p>
+            <% } else if (mode === "register") { %>
+                <p class="auth-switch">Already have an account? <a class="secondary-link" href="/parents/login">Log in</a></p>
+            <% } else { %>
+                <p class="auth-switch">New parent? <a class="secondary-link" href="/parents/register">Create an account</a></p>
+            <% } %>
+        </section>
+    </main>
+    <script src="/parents/show-password.js" defer></script>
+    <% if (mode === "reset") { %>
+        <script src="/parents/reset-password.js" defer></script>
+    <% } %>
+</body>
+</html>

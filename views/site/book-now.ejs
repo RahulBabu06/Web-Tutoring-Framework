@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<%- include("../partials/site-head") %>
+</head>
+<body class="site-page">
+<%- include("../partials/site-header") %>
+
+    <main class="site-main">
+        <div class="site-section booking-container">
+            <h1 id="page-title">Book a class</h1>
+            <p class="site-lede">Tell us a little about the student and we'll reply within <%= business.replyWithinHours %> hours to confirm a place.</p>
+
+            <form action="/book-now" method="POST" aria-label="Booking request">
+                <label for="email">Your email address</label>
+                <input type="email" id="email" name="email" autocomplete="email" required>
+
+                <label for="childName">Student&rsquo;s name</label>
+                <input type="text" id="childName" name="childName" minlength="2" required>
+
+                <label for="level">Level</label>
+                <select id="level" name="level" required>
+                    <option value="" disabled selected>Choose a level</option>
+                    <% business.levels.forEach((level) => { %><option value="<%= level %>"><%= level %></option><% }) %>
+                </select>
+
+                <label for="goals">What would you like to get from lessons?</label>
+                <textarea id="goals" name="goals" rows="4" minlength="5" required></textarea>
+
+                <label for="preferredClass">Class</label>
+                <select id="preferredClass" name="preferredClass" data-one-to-one-option="<%= oneToOne.enabled ? oneToOne.label : "" %>" required>
+                    <option value="" disabled selected>Choose a class</option>
+                    <% classOptions.forEach((option) => { %><option value="<%= option %>"><%= option %></option><% }) %>
+                </select>
+
+                <% if (oneToOne.enabled) { %>
+                    <div class="conditional-field" id="oneToOneTimeSlotField" hidden>
+                        <label for="preferredTimeSlot">Preferred 1-to-1 time</label>
+                        <select id="preferredTimeSlot" name="preferredTimeSlot" disabled>
+                            <option value="" disabled selected>Choose a time</option>
+                            <% oneToOne.timeSlots.forEach((slot) => { %><option value="<%= slot %>"><%= slot %></option><% }) %>
+                        </select>
+
+                        <label for="lessonLength">Lesson length</label>
+                        <select id="lessonLength" name="lessonLength" disabled>
+                            <option value="" disabled selected>Choose a length</option>
+                            <% oneToOne.lessons.forEach((lesson) => { %><option value="<%= lesson.minutes %>"><%= lesson.label %> (<%= lesson.priceLabel %>)</option><% }) %>
+                        </select>
+                    </div>
+                <% } %>
+
+                <button type="submit">Send booking request</button>
+            </form>
+        </div>
+    </main>
+
+<%- include("../partials/site-footer") %>
+</body>
+</html>
