@@ -17,3 +17,9 @@ export function errorHandler(error, req, res, next) {
         res.send(renderError ? message || "Something went wrong." : html);
     });
 }
+
+export function sendNotFound(res, message = "") {
+    res.status(404).render("error", { pageTitle: "Not found", pageDescription: "", currentPath: res.req.path, status: 404, message }, (renderError, html) => {
+        res.send(renderError ? message || "Not found." : html);
+    });
+}

@@ -1,4 +1,5 @@
 import express from "express";
+import { sendNotFound } from "../middleware/errors.js";
 import { checkoutRateLimiter, childLinkRequestRateLimiter, refundRequestRateLimiter } from "../middleware/rate-limiters.js";
 import { business, inputLimits } from "../config/env.js";
 
@@ -85,7 +86,7 @@ export function createParentsRouter({
             : null;
 
         if (!student) {
-            return res.status(404).send("Student not found.");
+            return sendNotFound(res, "Student not found.");
         }
 
         const origin = getPublicSiteOrigin();
