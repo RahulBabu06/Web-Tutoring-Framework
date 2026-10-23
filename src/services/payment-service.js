@@ -1,4 +1,5 @@
 import { PaymentStatus } from "../config/classes.js";
+import { business } from "../config/env.js";
 
 export function createPaymentService({
     deliverAdminNotification,
@@ -82,7 +83,7 @@ export function createPaymentService({
             console.error(`Paid Stripe checkout ${session.id} has no matching student ${studentId}.`);
             sendAdminNotification(
                 "Online payment needs attention",
-                `A parent paid ${formatMoney(session.amount_total, (session.currency || "gbp").toUpperCase())} online for ${purchaseLabel}, `
+                `A parent paid ${formatMoney(session.amount_total, (session.currency || business.currency).toUpperCase())} online for ${purchaseLabel}, `
                 + `but the student (${studentId}) no longer exists, so the payment wasn't recorded.\n`
                 + `Parent email: ${session.customer_details?.email || session.customer_email || "unknown"}\n`
                 + `Stripe checkout session: ${session.id}\n`
@@ -96,7 +97,7 @@ export function createPaymentService({
         const paymentIntent = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
         const payment = await recordPayment(student, {
             amountPence: toInteger(session.amount_total),
-            currency: (session.currency || "gbp").toUpperCase(),
+            currency: (session.currency || business.currency).toUpperCase(),
             status: PaymentStatus.paid,
             provider: "stripe",
             paymentMethod: "stripe_checkout",
