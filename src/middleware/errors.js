@@ -5,9 +5,15 @@ export function errorHandler(error, req, res, next) {
 
     console.error(error);
 
-    if (req.path.startsWith("/admin")) {
-        return res.status(500).send("There was a problem loading the admin records. Check the server logs and database settings.");
+    if (res.headersSent) {
+        return next(error);
     }
 
-    res.status(500).send("Something went wrong.");
+    const message = req.path.startsWith("/admin")
+        ? "There was a problem loading the admin records. Check the server logs and database settings."
+        : "";
+
+    res.status(500).render("error", { pageTitle: "Something went wrong", pageDescription: "", currentPath: req.path, status: 500, message }, (renderError, html) => {
+        res.send(renderError ? message || "Something went wrong." : html);
+    });
 }

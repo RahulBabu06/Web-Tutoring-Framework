@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<%- include("partials/site-head") %>
+</head>
+<body class="site-page">
+<%- include("partials/site-header") %>
+
+    <main class="site-main">
+        <section class="site-section" aria-labelledby="page-title">
+            <h1 id="page-title"><%= status === 404 ? "Page not found" : "Something went wrong" %></h1>
+            <p class="site-lede"><%= locals.message || (status === 404 ? "We couldn't find that page. It may have moved." : "Please try again in a moment. If it keeps happening, get in touch.") %></p>
+            <p class="site-actions">
+                <a class="button-link" href="/">Back to the home page</a>
+                <% if (business.contact.email) { %><a class="secondary-link" href="mailto:<%= business.contact.email %>">Email us</a><% } %>
+            </p>
+        </section>
+    </main>
+
+<%- include("partials/site-footer") %>
+</body>
+</html>
