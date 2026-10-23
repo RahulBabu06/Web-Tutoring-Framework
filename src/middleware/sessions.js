@@ -1,5 +1,9 @@
-import { adminPassword, adminSessionMs, adminSessionSecret, isAdminLoginConfigured, parentAccessCookieName, parentRefreshCookieMs, parentRefreshCookieName } from "../config/env.js";
+import { adminPassword, adminSessionMs, adminSessionSecret, dataDir, isAdminLoginConfigured, parentAccessCookieName, parentRefreshCookieMs, parentRefreshCookieName } from "../config/env.js";
 import crypto from "crypto";
+import fs from "fs";
+import { join } from "path";
+
+const revokedAdminSessionsFile = join(dataDir, "revoked-admin-sessions.json");
 
 export function createSessionHelpers({
     supabaseAuthRequest
@@ -108,7 +112,29 @@ export function createSessionHelpers({
     }
 
     // Session ids revoked by logout, kept until their token would have expired anyway.
-    const revokedAdminSessions = new Map();
+    // Saved to disk so a logged-out cookie stays logged out after a restart.
+    const revokedAdminSessions = loadRevokedAdminSessions();
+
+    function loadRevokedAdminSessions() {
+        try {
+            const entries = JSON.parse(fs.readFileSync(revokedAdminSessionsFile, "utf8"));
+            return new Map(Object.entries(entries).filter(([, exp]) => Number(exp) > Date.now()));
+        } catch (error) {
+            if (error.code !== "ENOENT") {
+                console.error("Could not read revoked admin sessions:", error.message);
+            }
+            return new Map();
+        }
+    }
+
+    function saveRevokedAdminSessions() {
+        try {
+            fs.mkdirSync(dataDir, { recursive: true });
+            fs.writeFileSync(revokedAdminSessionsFile, JSON.stringify(Object.fromEntries(revokedAdminSessions)), { mode: 0o600 });
+        } catch (error) {
+            console.error("Could not save revoked admin sessions:", error.message);
+        }
+    }
 
     function pruneRevokedAdminSessions() {
         const now = Date.now();
@@ -168,6 +194,7 @@ export function createSessionHelpers({
         if (session) {
             pruneRevokedAdminSessions();
             revokedAdminSessions.set(session.sid, session.exp);
+            saveRevokedAdminSessions();
         }
     }
 
