@@ -363,6 +363,10 @@ export function createAdminStudentsRouter({
             errors.push("Payment amount must be greater than 0.");
         }
 
+        if (!paymentInput.isValidCurrency) {
+            errors.push("Currency must be a 3-letter code such as GBP, USD or EUR.");
+        }
+
         if (!isDateInput(req.body.paidAt)) {
             errors.push("Payment date is required.");
         }

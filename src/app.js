@@ -378,6 +378,10 @@ function isCurrencyCode(value) {
 }
 
 function formatMoney(amountPence, currency = business.currency) {
+    if (!isCurrencyCode(currency)) {
+        return `${(toInteger(amountPence) / minorUnitsPerMajor()).toLocaleString(business.locale)} ${currency}`;
+    }
+
     return new Intl.NumberFormat(business.locale, {
         style: "currency",
         currency
@@ -609,6 +613,7 @@ function normalizePaymentInput(body) {
     return {
         amountPence: moneyToPence(body.amount, isCurrencyCode(currency) ? currency : business.currency),
         currency,
+        isValidCurrency: isCurrencyCode(currency),
         status,
         provider,
         paymentMethod: cleanString(body.paymentMethod) || (provider === "manual" ? "manual" : provider),
