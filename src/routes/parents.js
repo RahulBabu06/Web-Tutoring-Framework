@@ -1,5 +1,6 @@
 import express from "express";
-import { bookingRateLimiter, checkoutRateLimiter, childLinkRequestRateLimiter } from "../middleware/rate-limiters.js";
+import { sendNotFound } from "../middleware/errors.js";
+import { checkoutRateLimiter, childLinkRequestRateLimiter, refundRequestRateLimiter } from "../middleware/rate-limiters.js";
 import { business, inputLimits } from "../config/env.js";
 
 export function createParentsRouter({
@@ -85,7 +86,7 @@ export function createParentsRouter({
             : null;
 
         if (!student) {
-            return res.status(404).send("Student not found.");
+            return sendNotFound(res, "Student not found.");
         }
 
         const origin = getPublicSiteOrigin();
@@ -196,7 +197,7 @@ export function createParentsRouter({
         });
     }));
 
-    router.post("/parents/refunds", bookingRateLimiter, requireParent, asyncHandler(async (req, res) => {
+    router.post("/parents/refunds", refundRequestRateLimiter, requireParent, asyncHandler(async (req, res) => {
         const reason = cleanString(req.body.reason).slice(0, inputLimits.refundReason);
         const refundable = await getRefundableAttendanceForParent(req.parentUser.id, cleanString(req.body.attendanceId));
         const errors = refundable.error ? [refundable.error] : [];

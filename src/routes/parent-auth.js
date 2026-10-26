@@ -37,7 +37,7 @@ export function createParentAuthRouter({
 
     router.get("/parents/login", asyncHandler(async (req, res) => {
         if (isParentAuthConfigured) {
-            const session = await getParentSession(req, res);
+            const session = await getParentSession(req, res).catch(() => null);
 
             if (session?.user?.id) {
                 return res.redirect("/parents");
@@ -87,7 +87,7 @@ export function createParentAuthRouter({
 
     router.get("/parents/register", asyncHandler(async (req, res) => {
         if (isParentAuthConfigured) {
-            const session = await getParentSession(req, res);
+            const session = await getParentSession(req, res).catch(() => null);
 
             if (session?.user?.id) {
                 return res.redirect("/parents");

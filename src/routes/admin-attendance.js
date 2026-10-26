@@ -96,6 +96,7 @@ export function createAdminAttendanceRouter({
             classDateLabel: formatClassDateLabel(classDate),
             className: groupClass.name,
             classTime: groupClass.time,
+            parentEmailsWillSend: parentEmailsEnabled && isGmailConfigured,
             totalCredits: registerRows.reduce((total, row) => total + row.student.credits, 0)
         });
     }));

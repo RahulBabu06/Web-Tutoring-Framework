@@ -1,5 +1,9 @@
-import { adminPassword, adminSessionMs, adminSessionSecret, isAdminLoginConfigured, parentAccessCookieName, parentRefreshCookieMs, parentRefreshCookieName } from "../config/env.js";
+import { adminPassword, adminSessionMs, adminSessionSecret, dataDir, isAdminLoginConfigured, parentAccessCookieName, parentRefreshCookieMs, parentRefreshCookieName } from "../config/env.js";
 import crypto from "crypto";
+import fs from "fs";
+import { join } from "path";
+
+const revokedAdminSessionsFile = join(dataDir, "revoked-admin-sessions.json");
 
 export function createSessionHelpers({
     supabaseAuthRequest
@@ -33,6 +37,17 @@ export function createSessionHelpers({
         res.clearCookie(parentRefreshCookieName, parentCookieOptions(req, 0));
     }
 
+    // Network errors, timeouts and 5xx/429 from Auth are temporary: keep the cookies so the parent stays signed in.
+    function isTransientAuthError(error) {
+        return error instanceof TypeError || ["AbortError", "TimeoutError"].includes(error.name) || error.status >= 500 || error.status === 429;
+    }
+
+    function authUnavailableError(cause) {
+        const error = new Error("The account service is temporarily unavailable.", { cause });
+        error.status = 503;
+        return error;
+    }
+
     async function getParentSession(req, res) {
         const cookies = parseCookies(req);
         const accessToken = cookies[parentAccessCookieName];
@@ -47,6 +62,10 @@ export function createSessionHelpers({
                 const user = await supabaseAuthRequest("/user", { accessToken });
                 return { user, accessToken, refreshToken };
             } catch (error) {
+                if (isTransientAuthError(error)) {
+                    throw authUnavailableError(error);
+                }
+
                 if (!refreshToken) {
                     clearParentSessionCookies(req, res);
                     return null;
@@ -71,6 +90,10 @@ export function createSessionHelpers({
                 refreshToken: refreshedSession.refresh_token
             };
         } catch (error) {
+            if (isTransientAuthError(error)) {
+                throw authUnavailableError(error);
+            }
+
             clearParentSessionCookies(req, res);
             return null;
         }
@@ -79,7 +102,11 @@ export function createSessionHelpers({
     function parseCookies(req) {
         return Object.fromEntries((req.headers.cookie || "").split(";").filter(Boolean).map((cookie) => {
             const [key, ...value] = cookie.trim().split("=");
-            return [key, decodeURIComponent(value.join("="))];
+            try {
+                return [key, decodeURIComponent(value.join("="))];
+            } catch {
+                return [key, ""];
+            }
         }));
     }
 
@@ -104,7 +131,29 @@ export function createSessionHelpers({
     }
 
     // Session ids revoked by logout, kept until their token would have expired anyway.
-    const revokedAdminSessions = new Map();
+    // Saved to disk so a logged-out cookie stays logged out after a restart.
+    const revokedAdminSessions = loadRevokedAdminSessions();
+
+    function loadRevokedAdminSessions() {
+        try {
+            const entries = JSON.parse(fs.readFileSync(revokedAdminSessionsFile, "utf8"));
+            return new Map(Object.entries(entries).filter(([, exp]) => Number(exp) > Date.now()));
+        } catch (error) {
+            if (error.code !== "ENOENT") {
+                console.error("Could not read revoked admin sessions:", error.message);
+            }
+            return new Map();
+        }
+    }
+
+    function saveRevokedAdminSessions() {
+        try {
+            fs.mkdirSync(dataDir, { recursive: true });
+            fs.writeFileSync(revokedAdminSessionsFile, JSON.stringify(Object.fromEntries(revokedAdminSessions)), { mode: 0o600 });
+        } catch (error) {
+            console.error("Could not save revoked admin sessions:", error.message);
+        }
+    }
 
     function pruneRevokedAdminSessions() {
         const now = Date.now();
@@ -164,6 +213,7 @@ export function createSessionHelpers({
         if (session) {
             pruneRevokedAdminSessions();
             revokedAdminSessions.set(session.sid, session.exp);
+            saveRevokedAdminSessions();
         }
     }
 

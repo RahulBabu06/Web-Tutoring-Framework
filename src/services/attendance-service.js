@@ -26,7 +26,7 @@ export function createAttendanceService({
     }
 
     async function saveClassRegister(groupClass, classDate, attendanceInput) {
-        const students = (await listGroupClassStudents(groupClass)).filter((student) => attendanceInput?.[student.id]);
+        const students = (await listGroupClassStudents(groupClass)).filter((student) => attendanceInput?.[student.id]?.status);
         const history = await listAttendanceForStudents(students.map((student) => student.id));
         const payments = await listPaymentsForStudents(students.map((student) => student.id));
         const attendanceRows = [];

@@ -197,5 +197,7 @@ export const inputLimits = {
     cancelReason: 300,
     childName: 100,
     childRelationship: 50,
-    childLinkNotes: 1000
+    childLinkNotes: 1000,
+    bookingEmail: 254,
+    bookingGoals: 2000
 };

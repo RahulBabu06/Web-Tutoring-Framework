@@ -96,8 +96,11 @@ app.use(securityHeaders);
 app.post("/stripe/webhook", express.raw({ type: "application/json", limit: "1mb" }), (req, res, next) => {
     handleStripeWebhook(req, res).catch(next);
 });
+app.get("/healthz", (req, res) => {
+    res.json({ ok: true });
+});
 app.use(csrfProtection);
-app.use(express.static("public", { redirect: false }))
+app.use(express.static(join(rootDir, "public"), { redirect: false }));
 app.use(formBodyParser);
 
 const maxPendingChildLinkRequests = 5;
@@ -353,17 +356,36 @@ function toInteger(value, fallback = 0) {
     return Number.isFinite(number) ? Math.trunc(number) : fallback;
 }
 
-function moneyToPence(value) {
+// Amounts are stored in the currency's minor unit (pence, cents; whole yen for JPY), as Stripe expects.
+function minorUnitsPerMajor(currency = business.currency) {
+    const digits = new Intl.NumberFormat("en", { style: "currency", currency }).resolvedOptions().maximumFractionDigits;
+    return 10 ** digits;
+}
+
+function moneyToPence(value, currency = business.currency) {
     const normalizedValue = cleanString(value).replace(/[^\d.-]/g, "");
     const number = Number(normalizedValue);
-    return Number.isFinite(number) ? Math.round(number * 100) : 0;
+    return Number.isFinite(number) ? Math.round(number * minorUnitsPerMajor(currency)) : 0;
+}
+
+function isCurrencyCode(value) {
+    try {
+        new Intl.NumberFormat("en", { style: "currency", currency: value });
+        return /^[A-Z]{3}$/.test(value);
+    } catch {
+        return false;
+    }
 }
 
 function formatMoney(amountPence, currency = business.currency) {
+    if (!isCurrencyCode(currency)) {
+        return `${(toInteger(amountPence) / minorUnitsPerMajor()).toLocaleString(business.locale)} ${currency}`;
+    }
+
     return new Intl.NumberFormat(business.locale, {
         style: "currency",
         currency
-    }).format(toInteger(amountPence) / 100);
+    }).format(toInteger(amountPence) / minorUnitsPerMajor(currency));
 }
 
 function formatPaymentDateInput(value) {
@@ -586,10 +608,12 @@ function toAttendanceView(row) {
 function normalizePaymentInput(body) {
     const status = paymentStatuses.includes(body.status) ? body.status : PaymentStatus.paid;
     const provider = cleanString(body.provider) || "manual";
+    const currency = (cleanString(body.currency) || business.currency).toUpperCase();
 
     return {
-        amountPence: moneyToPence(body.amount),
-        currency: (cleanString(body.currency) || business.currency).toUpperCase(),
+        amountPence: moneyToPence(body.amount, isCurrencyCode(currency) ? currency : business.currency),
+        currency,
+        isValidCurrency: isCurrencyCode(currency),
         status,
         provider,
         paymentMethod: cleanString(body.paymentMethod) || (provider === "manual" ? "manual" : provider),
@@ -1154,6 +1178,9 @@ app.use(createBookingRouter({
     })
 }));
 
+app.use((req, res) => {
+    res.status(404).render("error", { pageTitle: "Page not found", pageDescription: "", currentPath: req.path, status: 404 });
+});
 app.use(errorHandler);
 
 export default app;

@@ -1,5 +1,7 @@
 import crypto from "crypto";
 
+const requestTimeoutMs = 20 * 1000;
+
 export function createStripeClient({ secretKey, webhookSecret }) {
     async function request(path, { method = "GET", params } = {}) {
         const response = await fetch(`https://api.stripe.com/v1${path}`, {
@@ -8,7 +10,8 @@ export function createStripeClient({ secretKey, webhookSecret }) {
                 Authorization: `Bearer ${secretKey}`,
                 ...(params ? { "Content-Type": "application/x-www-form-urlencoded" } : {})
             },
-            body: params ? new URLSearchParams(params) : undefined
+            body: params ? new URLSearchParams(params) : undefined,
+            signal: AbortSignal.timeout(requestTimeoutMs)
         });
         const data = await response.json().catch(() => ({}));
 
