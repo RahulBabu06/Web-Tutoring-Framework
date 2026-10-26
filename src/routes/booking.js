@@ -6,34 +6,44 @@ import { bookingRateLimiter } from "../middleware/rate-limiters.js";
 export function createBookingRouter({ bookingService, requireAdmin }) {
     const router = express.Router();
 
-    router.post("/book-now", bookingRateLimiter, async (req, res) => {
-        const booking = bookingService.validateBooking(req.body);
-
-        if (!booking) {
-            return res.redirect(303, "/book-now?error=details#page-title");
-        }
-
-        let isSaved = false;
+    router.post("/book-now", bookingRateLimiter, async (req, res, next) => {
         try {
-            await bookingService.saveBookingRequest(req.body, booking);
-            isSaved = true;
-        } catch (error) {
-            console.error("Booking request could not be saved:", error.message);
-        }
+            const booking = req.body && typeof req.body === "object" ? bookingService.validateBooking(req.body) : null;
 
-        if (!bookingService.isEmailConfigured) {
-            if (!isSaved) {
-                return res.status(503).send(`Sorry, your request couldn't be sent. Please email ${business.contact.email} instead.`);
+            if (!booking) {
+                return res.redirect(303, "/book-now?error=details#page-title");
             }
-            console.warn("Booking request saved to " + bookingService.bookingRequestsFile + " (Gmail API isn't set up, so no email was sent). See /admin/booking-requests.");
-            return res.redirect("/thank-you");
+
+            let isSaved = false;
+            try {
+                await bookingService.saveBookingRequest(req.body, booking);
+                isSaved = true;
+            } catch (error) {
+                console.error("Booking request could not be saved:", error.message);
+            }
+
+            if (!bookingService.isEmailConfigured) {
+                if (!isSaved) {
+                    return res.status(503).render("error", {
+                        pageTitle: "Request not sent",
+                        pageDescription: "",
+                        currentPath: req.path,
+                        status: 503,
+                        message: `Sorry, your request couldn't be sent. Please email ${business.contact.email} instead.`
+                    });
+                }
+                console.warn("Booking request saved to " + bookingService.bookingRequestsFile + " (Gmail API isn't set up, so no email was sent). See /admin/booking-requests.");
+                return res.redirect("/thank-you");
+            }
+
+            bookingService.sendBookingEmail(req.body, booking)
+                .then(() => console.log("Email sent successfully"))
+                .catch((error) => console.error("Booking email failed:", error.message));
+
+            res.redirect("/thank-you");
+        } catch (error) {
+            next(error);
         }
-
-        bookingService.sendBookingEmail(req.body, booking)
-            .then(() => console.log("Email sent successfully"))
-            .catch((error) => console.error("Booking email failed:", error.message));
-
-        res.redirect("/thank-you");
     });
 
     const bookingRequestsPerPage = 50;
